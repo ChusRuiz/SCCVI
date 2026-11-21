@@ -3,6 +3,7 @@ const cors = require("cors");
 const pool = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const { verificarToken } = require("./middleware/authMiddleware");
+const pacienteRoutes = require("./routes/pacienteRoutes");
 
 require("dotenv").config();
 
@@ -21,6 +22,7 @@ app.get("/", (req, res) => {
 
 // Autenticación
 app.use("/api/auth", authRoutes);
+app.use("/api/pacientes", pacienteRoutes);
 
 // Verificar conexión a PostgreSQL
 app.get("/api/health", async (req, res) => {
