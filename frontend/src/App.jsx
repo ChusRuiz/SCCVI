@@ -7,6 +7,7 @@ import Pacientes from "./pages/Pacientes";
 import Crecimiento from "./pages/Crecimiento";
 import Comunidades from "./pages/Comunidades";
 import Padres from "./pages/Padres";
+import Alertas from "./pages/Alertas";
 
 import MainLayout from "./components/layout/MainLayout";
 
@@ -68,6 +69,10 @@ function App() {
       title: "Configuración",
       subtitle: "Preferencias del sistema",
     },
+    alertas: {
+  title: "Sistema de alertas",
+  subtitle: "Monitoreo de alertas y seguimiento infantil",
+},
   };
 
   const contenido = {
@@ -76,6 +81,7 @@ function App() {
     comunidades: <Comunidades />,
     padres: <Padres />,
     crecimiento: <Crecimiento />,
+    alertas: <Alertas />,
   };
 
   return (

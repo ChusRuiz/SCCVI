@@ -10,6 +10,7 @@ import {
   HeartPulse,
   MapPin,
   UserRound,
+  BellRing,
 } from "lucide-react";
 
 const menuItems = [
@@ -19,7 +20,7 @@ const menuItems = [
   { id: "padres", label: "Padres de familia", icon: UserRound },
   { id: "crecimiento", label: "Crecimiento", icon: Activity },
   { id: "vacunacion", label: "Vacunación", icon: Syringe },
-  
+  { id: "alertas", label: "Alertas", icon: BellRing,},
 ];
 
 export default function Sidebar({
