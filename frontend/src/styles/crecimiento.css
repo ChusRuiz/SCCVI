@@ -1,13 +1,22 @@
 
-/* ============================
-   CONTROL DE CRECIMIENTO
-============================ */
+/* ============================================
+   SCCVI - MODULO DE CONTROL DE CRECIMIENTO
+============================================ */
+
+/* ============================================
+   PAGINA PRINCIPAL
+============================================ */
 
 .growth-page {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  min-width: 0;
 }
+
+/* ============================================
+   ENCABEZADO
+============================================ */
 
 .growth-header {
   display: flex;
@@ -24,11 +33,15 @@
 
 .growth-title svg {
   color: var(--accent);
+  flex-shrink: 0;
 }
 
 .growth-title h1 {
+  font-family: "Manrope", sans-serif;
   font-size: 24px;
+  font-weight: 800;
   margin: 0;
+  color: var(--text);
 }
 
 .growth-header p {
@@ -37,23 +50,38 @@
   font-size: 13px;
 }
 
+/* ============================================
+   BOTONES
+============================================ */
+
 .growth-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 39px;
+  padding: 10px 14px;
   border: 1px solid var(--border);
+  border-radius: 9px;
   background: var(--surface);
   color: var(--text);
-  padding: 10px 13px;
-  border-radius: 9px;
-  cursor: pointer;
   font-size: 13px;
-  transition: border-color 0.15s;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    opacity 0.15s ease;
 }
 
-.growth-btn:hover {
+.growth-btn:hover:not(:disabled) {
   border-color: var(--accent);
+  background: var(--surface-hover);
+}
+
+.growth-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .growth-btn:disabled {
@@ -62,24 +90,73 @@
 }
 
 .growth-primary {
-  color: #fff;
+  color: #ffffff;
   background: var(--accent);
   border-color: var(--accent);
 }
 
-.growth-error {
-  padding: 12px;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 9px;
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.08);
-  font-size: 13px;
+.growth-primary:hover:not(:disabled) {
+  color: #ffffff;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
+
+.growth-close-btn {
+  width: 38px;
+  min-width: 38px;
+  padding: 0;
+}
+
+/* ============================================
+   ALERTAS Y MENSAJES
+============================================ */
+
+.growth-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 15px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.growth-alert span {
+  flex: 1;
+}
+
+.growth-alert button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.growth-alert-error {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.growth-alert-success {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+/* ============================================
+   SELECTOR DE PACIENTE
+============================================ */
 
 .growth-patient-selector {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
   max-width: 500px;
 }
 
@@ -92,17 +169,29 @@
 
 .growth-patient-selector select {
   width: 100%;
-  padding: 12px;
+  min-height: 43px;
+  padding: 11px 13px;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--surface);
   color: var(--text);
   outline: none;
+  font-size: 13px;
 }
 
 .growth-patient-selector select:focus {
   border-color: var(--accent);
 }
+
+.growth-patient-selector option,
+.growth-field select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ============================================
+   TARJETA DEL PACIENTE
+============================================ */
 
 .growth-patient-card {
   display: flex;
@@ -120,22 +209,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   border-radius: 11px;
   color: var(--accent);
   background: var(--accent-soft);
 }
 
-.growth-patient-card > div:nth-child(2) {
+.growth-patient-info {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
 }
 
-.growth-patient-card strong {
+.growth-patient-info strong {
+  color: var(--text);
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
-.growth-patient-card span {
+.growth-patient-info span {
   color: var(--text-secondary);
   font-size: 12px;
 }
@@ -147,49 +240,238 @@
   margin-left: auto;
   color: var(--accent);
   font-size: 12px;
+  white-space: nowrap;
 }
+
+/* ============================================
+   CONTENEDOR DEL HISTORIAL
+============================================ */
 
 .growth-history-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  min-width: 0;
   padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.growth-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.growth-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.growth-section-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.growth-section-heading p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.growth-section-heading > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   INDICADORES
+============================================ */
+
+.growth-indicators {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.growth-indicator-card {
+  min-width: 0;
+  padding: 19px;
   border: 1px solid var(--border);
   border-radius: 13px;
   background: var(--surface);
 }
 
+.growth-indicator-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.growth-indicator-top > span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.growth-indicator-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--accent);
+}
+
+.growth-indicator-card h3 {
+  margin: 17px 0 8px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.growth-indicator-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* ============================================
+   GRAFICAS
+============================================ */
+
+.growth-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 12px 0;
+}
+
+.growth-chart-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.growth-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.growth-chart-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.growth-chart-header span {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.growth-empty-chart {
+  padding: 30px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 13px;
+}
+
+/* Tooltip de Recharts */
+
+.growth-page .recharts-default-tooltip {
+  border: 1px solid var(--border) !important;
+  border-radius: 9px !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.growth-page .recharts-tooltip-label,
+.growth-page .recharts-tooltip-item {
+  color: var(--text) !important;
+  font-size: 12px;
+}
+
+.growth-page .recharts-cartesian-axis-tick-value {
+  fill: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* ============================================
+   ENCABEZADO DEL HISTORIAL
+============================================ */
+
 .growth-history-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 15px;
+  margin-top: 8px;
 }
 
 .growth-history-header h2 {
-  font-size: 16px;
   margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .growth-history-header p {
+  margin: 6px 0 0;
   color: var(--text-secondary);
   font-size: 12px;
-  margin: 6px 0 0;
 }
+
+/* ============================================
+   BUSCADOR
+============================================ */
 
 .growth-search {
   display: flex;
   align-items: center;
   gap: 9px;
+  width: 100%;
+  max-width: 420px;
   padding: 0 11px;
-  max-width: 400px;
   border: 1px solid var(--border);
   border-radius: 9px;
   color: var(--text-secondary);
+  background: var(--surface);
+}
+
+.growth-search:focus-within {
+  border-color: var(--accent);
+}
+
+.growth-search > svg {
+  flex-shrink: 0;
 }
 
 .growth-search input {
   width: 100%;
-  height: 40px;
+  height: 41px;
   border: none;
   outline: none;
   background: transparent;
@@ -197,48 +479,121 @@
   font-size: 13px;
 }
 
+.growth-search input::placeholder {
+  color: var(--text-secondary);
+}
+
 .growth-search button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
 }
 
+/* ============================================
+   TABLA DE CONTROLES
+============================================ */
+
 .growth-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 11px;
 }
 
 .growth-table {
   width: 100%;
+  min-width: 1050px;
   border-collapse: collapse;
-  min-width: 650px;
+  background: var(--surface);
 }
 
 .growth-table th {
-  padding: 13px;
-  text-align: left;
-  color: var(--text-secondary);
-  font-size: 12px;
+  padding: 14px 13px;
   border-bottom: 1px solid var(--border);
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+  text-align: left;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .growth-table td {
   padding: 14px 13px;
   border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  color: var(--text);
+  font-size: 12px;
+  vertical-align: middle;
 }
 
-.growth-table tr:last-child td {
+.growth-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+.growth-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.growth-table td:first-child {
+.growth-date-cell {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: var(--text-secondary);
+  color: var(--text-secondary) !important;
+  white-space: nowrap;
 }
+
+.growth-date-cell svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.growth-value-cell {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.growth-standard-value {
+  color: var(--accent) !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.growth-observations {
+  max-width: 220px;
+  min-width: 150px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.growth-method-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.growth-method-badge svg {
+  color: var(--accent);
+}
+
+.growth-method-unknown {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* ============================================
+   ESTADOS VACIOS
+============================================ */
 
 .growth-empty {
   display: flex;
@@ -247,6 +602,7 @@
   justify-content: center;
   gap: 10px;
   min-height: 200px;
+  padding: 25px;
   text-align: center;
   color: var(--text-secondary);
 }
@@ -263,9 +619,16 @@
 .growth-empty p {
   margin: 0;
   font-size: 12px;
+  line-height: 1.5;
 }
 
-/* Modal */
+.growth-empty-compact {
+  min-height: 130px;
+}
+
+/* ============================================
+   MODAL
+============================================ */
 
 .growth-modal-overlay {
   position: fixed;
@@ -275,49 +638,61 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.55);
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(3px);
 }
 
 .growth-modal {
   width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
+  max-width: 600px;
+  max-height: 92vh;
   overflow-y: auto;
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 15px;
   background: var(--surface);
   color: var(--text);
+  box-shadow: var(--shadow);
 }
 
 .growth-modal-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 22px;
+  gap: 15px;
+  margin-bottom: 23px;
 }
 
 .growth-modal-header h2 {
   margin: 0;
+  color: var(--text);
+  font-family: "Manrope", sans-serif;
   font-size: 20px;
+  font-weight: 800;
 }
 
 .growth-modal-header p {
+  margin: 6px 0 0;
   color: var(--text-secondary);
   font-size: 13px;
-  margin: 6px 0 0;
 }
+
+/* ============================================
+   FORMULARIO
+============================================ */
 
 .growth-form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 17px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .growth-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .growth-field-full {
@@ -325,40 +700,133 @@
 }
 
 .growth-field input,
-.growth-field textarea {
+.growth-field textarea,
+.growth-field select {
   width: 100%;
+  min-height: 42px;
   padding: 11px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--background, var(--surface));
+  background: var(--bg);
   color: var(--text);
   outline: none;
   font-family: inherit;
   font-size: 13px;
+  transition: border-color 0.15s ease;
 }
 
 .growth-field input:focus,
-.growth-field textarea:focus {
+.growth-field textarea:focus,
+.growth-field select:focus {
   border-color: var(--accent);
 }
 
+.growth-field input::placeholder,
+.growth-field textarea::placeholder {
+  color: var(--text-secondary);
+}
+
 .growth-field textarea {
+  min-height: 90px;
   resize: vertical;
 }
+
+.growth-field select {
+  cursor: pointer;
+}
+
+.growth-field small {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ============================================
+   INFORMACION DEL METODO DE MEDICION
+============================================ */
+
+.growth-method-information {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid rgba(20, 184, 166, 0.25);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.growth-method-information > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.growth-method-information strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.growth-method-information p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   PIE DEL MODAL
+============================================ */
 
 .growth-modal-footer {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 22px;
-  padding-top: 17px;
+  margin-top: 23px;
+  padding-top: 18px;
   border-top: 1px solid var(--border);
+}
+
+/* ============================================
+   ANIMACION DE CARGA
+============================================ */
+
+.growth-loading-icon {
+  animation: growth-spin 1s linear infinite;
+}
+
+@keyframes growth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   RESPONSIVE
+============================================ */
+
+@media (max-width: 1100px) {
+  .growth-indicators {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .growth-charts {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
   .growth-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .growth-header > button {
+    width: 100%;
   }
 
   .growth-patient-card {
@@ -370,6 +838,10 @@
     margin-left: 0;
   }
 
+  .growth-history-container {
+    padding: 15px;
+  }
+
   .growth-form-grid {
     grid-template-columns: 1fr;
   }
@@ -379,120 +851,11 @@
   }
 
   .growth-modal {
-    padding: 18px;
+    padding: 19px;
   }
-}
 
-
-/* GRAFICAS DE CRECIMIENTO */
-
-.growth-charts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  margin: 24px 0;
-}
-
-.growth-chart-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 20px;
-  min-width: 0;
-}
-
-.growth-chart-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.growth-chart-header h3 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.growth-chart-header span {
-  font-size: 12px;
-  padding: 5px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-secondary);
-}
-
-.growth-empty-chart {
-  padding: 30px;
-  text-align: center;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  color: var(--text-secondary);
-  margin: 20px 0;
-}
-
-@media (max-width: 900px) {
-  .growth-charts {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* INDICADORES DE CRECIMIENTO */
-
-.growth-indicators {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin: 22px 0;
-}
-
-.growth-indicator-card {
-  padding: 20px;
-  border: 1px solid var(--border-color);
-  border-radius: 15px;
-  background: var(--bg-card);
-  min-width: 0;
-}
-
-.growth-indicator-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.growth-indicator-top > span {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.growth-indicator-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  color: #14b8a6;
-}
-
-.growth-indicator-card h3 {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 18px 0 8px;
-  overflow-wrap: anywhere;
-}
-
-.growth-indicator-card p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-@media (max-width: 1100px) {
-  .growth-indicators {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .growth-history-header {
+    align-items: flex-start;
   }
 }
 
@@ -503,5 +866,196 @@
 
   .growth-indicator-card {
     padding: 16px;
+  }
+
+  .growth-chart-card {
+    padding: 14px;
+  }
+
+  .growth-section-heading h2 {
+    font-size: 14px;
+  }
+
+  .growth-title h1 {
+    font-size: 20px;
+  }
+
+  .growth-modal-overlay {
+    align-items: flex-start;
+    padding: 10px;
+  }
+
+  .growth-modal {
+    max-height: calc(100vh - 20px);
+    padding: 16px;
+  }
+
+  .growth-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .growth-modal-footer .growth-btn {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   CURVAS DE REFERENCIA OMS
+============================================ */
+
+.growth-oms-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+.growth-oms-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.growth-oms-heading h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.growth-oms-heading p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.growth-oms-version {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent);
+  background: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.growth-curve-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.growth-curve-patient-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #0f766e;
+}
+
+.growth-curve-reference-line {
+  width: 20px;
+  height: 2px;
+  margin-left: 10px;
+  background: var(--accent);
+}
+
+.growth-curve-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.growth-curve-excluded {
+  color: #b45309;
+}
+
+.growth-oms-note {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.growth-oms-note strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.growth-oms-note p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.growth-oms-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 175px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.growth-oms-tooltip > strong {
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.growth-oms-tooltip > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+.growth-oms-tooltip > div > span:nth-child(2) {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+.growth-oms-tooltip-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.growth-chart-error {
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+@media (max-width: 600px) {
+  .growth-oms-heading {
+    align-items: flex-start;
+  }
+
+  .growth-oms-heading h3 {
+    font-size: 15px;
+  }
+
+  .growth-curve-footer {
+    flex-direction: column;
   }
 }

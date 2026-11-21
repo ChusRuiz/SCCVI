@@ -297,3 +297,281 @@
     padding: 15px;
   }
 }
+
+/* =====================================
+   EVALUACIONES OMS EN PERFIL
+===================================== */
+
+.profile-growth-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.profile-section-heading h3 {
+  margin: 0 0 6px;
+}
+
+.profile-section-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.profile-section-heading > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.profile-oms-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.profile-oms-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.profile-oms-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-oms-card-header svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.profile-oms-score {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.profile-oms-state {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.profile-oms-state.status-normal {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.10);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.profile-oms-state.status-warning {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.10);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.profile-oms-state.status-critical {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.10);
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.profile-oms-state.status-unknown {
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.profile-oms-measurement {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.profile-oms-history {
+  margin-top: 17px;
+  padding-top: 17px;
+  border-top: 1px solid var(--border);
+}
+
+.profile-oms-history h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+
+.profile-oms-history h4 svg {
+  color: var(--accent);
+}
+
+.profile-oms-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-oms-history-item {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.profile-oms-history-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-oms-history-top > strong {
+  font-size: 13px;
+}
+
+.profile-oms-history-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.profile-oms-history-values div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.profile-oms-history-values span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.profile-oms-history-values strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.profile-oms-description {
+  margin: 14px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-oms-reference {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.profile-oms-reference summary {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-oms-reference > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.profile-oms-empty {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 15px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-oms-empty svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.profile-control-user {
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* Ajuste de tarjetas de gráficas al tema del perfil */
+
+.patient-profile .growth-chart-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.patient-profile .growth-chart-header span {
+  border-color: var(--border);
+}
+
+@media (max-width: 1100px) {
+  .profile-oms-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .profile-oms-history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-oms-history-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 550px) {
+  .profile-oms-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-oms-history-values {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-oms-card {
+    padding: 15px;
+  }
+}
