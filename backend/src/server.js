@@ -10,6 +10,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const comunidadRoutes = require("./routes/comunidadRoutes");
 const padreRoutes = require("./routes/padreRoutes");
 const alertasRoutes = require("./routes/alertasRoutes");
+const { iniciarNotificacionesJob} = require("./jobs/notificacionesJob");
+const notificacionesRoutes = require("./routes/notificacionesRoutes");
 
 require("dotenv").config();
 
@@ -35,6 +37,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/comunidades", comunidadRoutes);
 app.use("/api/padres", padreRoutes);
 app.use("/api/alertas", alertasRoutes);
+app.use("/api/notificaciones", notificacionesRoutes);
 
 // Verificar conexión a PostgreSQL
 app.get("/api/health", async (req, res) => {
@@ -65,5 +68,7 @@ app.get("/api/protegido", verificarToken, (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`SCCVI activo en http://localhost:${PORT}`);
+  console.log(`Servidor iniciado en el puerto ${PORT}`);
+
+  iniciarNotificacionesJob();
 });

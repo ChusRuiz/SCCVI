@@ -8,6 +8,7 @@ import Crecimiento from "./pages/Crecimiento";
 import Comunidades from "./pages/Comunidades";
 import Padres from "./pages/Padres";
 import Alertas from "./pages/Alertas";
+import Notificaciones from "./pages/Notificaciones";
 
 import MainLayout from "./components/layout/MainLayout";
 
@@ -73,15 +74,20 @@ function App() {
   title: "Sistema de alertas",
   subtitle: "Monitoreo de alertas y seguimiento infantil",
 },
+notificaciones: {
+  title: "Notificaciones",
+  subtitle: "Historial de envíos por correo y Telegram",
+},
   };
 
   const contenido = {
-    dashboard: <Dashboard />,
+    dashboard: <Dashboard onNavigate={setActivePage} />,
     pacientes: <Pacientes />,
     comunidades: <Comunidades />,
     padres: <Padres />,
     crecimiento: <Crecimiento />,
     alertas: <Alertas />,
+    notificaciones: <Notificaciones />,
   };
 
   return (
