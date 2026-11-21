@@ -9,6 +9,7 @@ import Comunidades from "./pages/Comunidades";
 import Padres from "./pages/Padres";
 import Alertas from "./pages/Alertas";
 import Notificaciones from "./pages/Notificaciones";
+import CarnetPublico from "./pages/CarnetPublico";
 
 import MainLayout from "./components/layout/MainLayout";
 
@@ -21,6 +22,9 @@ function App() {
 
   const [activePage, setActivePage] = useState("dashboard");
 
+  // El carnet QR es una vista pública, independiente del login del personal.
+  const coincidenciaCarnet = window.location.pathname.match(/^\/carnet\/([a-f0-9]{64})\/?$/i);
+
   const handleLogin = (user) => {
     setUsuario(user || { autenticado: true });
   };
@@ -30,6 +34,10 @@ function App() {
     setUsuario(null);
     setActivePage("dashboard");
   };
+
+  if (coincidenciaCarnet) {
+    return <CarnetPublico token={coincidenciaCarnet[1]} />;
+  }
 
   if (!usuario) {
     return <Login onLogin={handleLogin} />;
