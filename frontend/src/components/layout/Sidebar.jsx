@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   Users,
@@ -7,14 +8,18 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   HeartPulse,
+  MapPin,
+  UserRound,
 } from "lucide-react";
-import { motion } from "framer-motion";
 
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "pacientes", label: "Pacientes", icon: Users },
+  { id: "comunidades", label: "Comunidades", icon: MapPin },
+  { id: "padres", label: "Padres de familia", icon: UserRound },
   { id: "crecimiento", label: "Crecimiento", icon: Activity },
   { id: "vacunacion", label: "Vacunación", icon: Syringe },
+  
 ];
 
 export default function Sidebar({
@@ -25,7 +30,6 @@ export default function Sidebar({
 }) {
   return (
     <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
-      {/* Logo */}
       <div className="sidebar-brand">
         <div className="sidebar-logo">
           <HeartPulse size={22} />
@@ -39,7 +43,6 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Navigation */}
       <div className="sidebar-section-label">
         {!collapsed && "MENU PRINCIPAL"}
       </div>
@@ -52,6 +55,7 @@ export default function Sidebar({
           return (
             <button
               key={item.id}
+              type="button"
               className={`sidebar-item ${active ? "active" : ""}`}
               onClick={() => onNavigate(item.id)}
               title={collapsed ? item.label : undefined}
@@ -60,7 +64,9 @@ export default function Sidebar({
 
               {!collapsed && <span>{item.label}</span>}
 
-              {active && <span className="sidebar-active-indicator" />}
+              {active && (
+                <span className="sidebar-active-indicator" />
+              )}
             </button>
           );
         })}
@@ -70,6 +76,7 @@ export default function Sidebar({
         <div className="sidebar-divider" />
 
         <button
+          type="button"
           className={`sidebar-item ${
             activePage === "configuracion" ? "active" : ""
           }`}
@@ -81,6 +88,7 @@ export default function Sidebar({
         </button>
 
         <button
+          type="button"
           className="sidebar-collapse-button"
           onClick={onToggleCollapse}
           title={collapsed ? "Expandir menú" : "Contraer menú"}

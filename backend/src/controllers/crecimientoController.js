@@ -625,6 +625,7 @@ const eliminarControl = async (req, res) => {
 // OBTENER CURVAS OMS Y CONTROLES DEL PACIENTE
 // ============================================
 
+
 const obtenerCurvasOMS = async (req, res) => {
   try {
     const idPaciente = Number(req.params.id);
@@ -635,7 +636,10 @@ const obtenerCurvasOMS = async (req, res) => {
       });
     }
 
-    // 1. Obtener sexo y fecha de nacimiento
+    // ========================================
+    // 1. CONSULTAR PACIENTE
+    // ========================================
+
     const pacienteResult = await pool.query(
       `SELECT id_paciente, fecha_nacimiento, sexo
        FROM pacientes
@@ -651,7 +655,10 @@ const obtenerCurvasOMS = async (req, res) => {
 
     const paciente = pacienteResult.rows[0];
 
-    // 2. Consultar controles históricos
+    // ========================================
+    // 2. CONSULTAR CONTROLES
+    // ========================================
+
     const controlesResult = await pool.query(
       `SELECT
           id_control,
@@ -667,7 +674,6 @@ const obtenerCurvasOMS = async (req, res) => {
       [idPaciente]
     );
 
-    // 3. Calcular edad de cada control
     const controles = controlesResult.rows.map((control) => {
       const edadMeses = calcularEdadMeses(
         paciente.fecha_nacimiento,
@@ -678,19 +684,16 @@ const obtenerCurvasOMS = async (req, res) => {
         id_control: control.id_control,
         fecha_control: normalizarFecha(control.fecha_control),
         edad_meses: edadMeses,
+
         peso_kg: Number(control.peso_kg),
         talla_cm: Number(control.talla_cm),
 
-        // Solo se utiliza la talla estandarizada cuando existe.
-        // Los controles antiguos sin método de medición no
-        // se incorporan a la curva OMS de talla.
         talla_estandar_oms_cm:
           control.talla_estandar_oms_cm == null
             ? null
             : Number(control.talla_estandar_oms_cm),
 
-        metodo_medicion_talla:
-          control.metodo_medicion_talla,
+        metodo_medicion_talla: control.metodo_medicion_talla,
 
         perimetro_cefalico_cm:
           control.perimetro_cefalico_cm == null
@@ -699,7 +702,10 @@ const obtenerCurvasOMS = async (req, res) => {
       };
     });
 
-    // 4. Consultar las curvas OMS de peso para la edad
+    // ========================================
+    // 3. PESO PARA LA EDAD
+    // ========================================
+
     const pesoResult = await pool.query(
       `SELECT
           v.edad_meses,
@@ -721,7 +727,10 @@ const obtenerCurvasOMS = async (req, res) => {
       [paciente.sexo]
     );
 
-    // 5. Consultar las curvas OMS de talla para la edad
+    // ========================================
+    // 4. LONGITUD / ESTATURA PARA LA EDAD
+    // ========================================
+
     const tallaResult = await pool.query(
       `SELECT
           v.edad_meses,
@@ -743,8 +752,7 @@ const obtenerCurvasOMS = async (req, res) => {
       [paciente.sexo]
     );
 
-    // 6. Unir los archivos de talla y evitar duplicar
-    // el límite de 24 meses.
+    // Evitar mezclar archivos de diferentes rangos
     const referenciasTalla = tallaResult.rows.filter((fila) => {
       const edad = Number(fila.edad_meses);
       const archivo = fila.archivo_origen.toLowerCase();
@@ -756,8 +764,71 @@ const obtenerCurvasOMS = async (req, res) => {
       return archivo.includes("2-to-5-years");
     });
 
-    // 7. Convertir valores numéricos para el frontend
-    const normalizarCurva = (fila) => ({
+    // ========================================
+    // 5. PESO PARA LONGITUD / ESTATURA
+    // ========================================
+
+    const pesoTallaResult = await pool.query(
+      `SELECT
+          v.medida_cm,
+          v.sd3neg,
+          v.sd2neg,
+          v.sd1neg,
+          v.sd0,
+          v.sd1,
+          v.sd2,
+          v.sd3,
+          r.archivo_origen
+       FROM referencias_crecimiento r
+       INNER JOIN valores_referencia_oms v
+          ON r.id_referencia = v.id_referencia
+       WHERE r.indicador = 'peso_talla'
+         AND r.sexo = $1
+         AND r.estado = TRUE
+       ORDER BY v.medida_cm`,
+      [paciente.sexo]
+    );
+
+    const curvasPesoLongitud = pesoTallaResult.rows.filter(
+      (fila) =>
+        fila.archivo_origen.toLowerCase().startsWith("wfl_")
+    );
+
+    const curvasPesoEstatura = pesoTallaResult.rows.filter(
+      (fila) =>
+        fila.archivo_origen.toLowerCase().startsWith("wfh_")
+    );
+
+    // ========================================
+    // 6. PERÍMETRO CEFÁLICO PARA LA EDAD
+    // ========================================
+
+    const perimetroResult = await pool.query(
+      `SELECT
+          v.edad_meses,
+          v.sd3neg,
+          v.sd2neg,
+          v.sd1neg,
+          v.sd0,
+          v.sd1,
+          v.sd2,
+          v.sd3,
+          r.archivo_origen
+       FROM referencias_crecimiento r
+       INNER JOIN valores_referencia_oms v
+          ON r.id_referencia = v.id_referencia
+       WHERE r.indicador = 'perimetro_cefalico'
+         AND r.sexo = $1
+         AND r.estado = TRUE
+       ORDER BY v.edad_meses`,
+      [paciente.sexo]
+    );
+
+    // ========================================
+    // 7. NORMALIZAR REFERENCIAS DE EDAD
+    // ========================================
+
+    const normalizarCurvaEdad = (fila) => ({
       edad_meses: Number(fila.edad_meses),
 
       z_menos_3: Number(fila.sd3neg),
@@ -773,8 +844,47 @@ const obtenerCurvasOMS = async (req, res) => {
       archivo_origen: fila.archivo_origen,
     });
 
-    const curvasPeso = pesoResult.rows.map(normalizarCurva);
-    const curvasTalla = referenciasTalla.map(normalizarCurva);
+    // ========================================
+    // 8. NORMALIZAR REFERENCIAS DE MEDIDA
+    // ========================================
+
+    const normalizarCurvaMedida = (fila) => ({
+      medida_cm: Number(fila.medida_cm),
+
+      z_menos_3: Number(fila.sd3neg),
+      z_menos_2: Number(fila.sd2neg),
+      z_menos_1: Number(fila.sd1neg),
+
+      z_0: Number(fila.sd0),
+
+      z_mas_1: Number(fila.sd1),
+      z_mas_2: Number(fila.sd2),
+      z_mas_3: Number(fila.sd3),
+
+      archivo_origen: fila.archivo_origen,
+    });
+
+    const curvasPeso = pesoResult.rows.map(normalizarCurvaEdad);
+
+    const curvasTalla = referenciasTalla.map(
+      normalizarCurvaEdad
+    );
+
+    const curvasLongitud = curvasPesoLongitud.map(
+      normalizarCurvaMedida
+    );
+
+    const curvasEstatura = curvasPesoEstatura.map(
+      normalizarCurvaMedida
+    );
+
+    const curvasPerimetro = perimetroResult.rows.map(
+      normalizarCurvaEdad
+    );
+
+    // ========================================
+    // 9. RESPUESTA PARA EL FRONTEND
+    // ========================================
 
     return res.json({
       paciente: {
@@ -785,6 +895,11 @@ const obtenerCurvasOMS = async (req, res) => {
       curvas: {
         peso_edad: curvasPeso,
         talla_edad: curvasTalla,
+
+        peso_longitud: curvasLongitud,
+        peso_estatura: curvasEstatura,
+
+        perimetro_cefalico: curvasPerimetro,
       },
 
       controles,
@@ -803,6 +918,7 @@ const obtenerCurvasOMS = async (req, res) => {
     });
   }
 };
+
 
 
 // ============================================

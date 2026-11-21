@@ -7,6 +7,8 @@ const pacienteRoutes = require("./routes/pacienteRoutes");
 const crecimientoRoutes = require("./routes/crecimientoRoutes");
 const vacunacionRoutes = require("./routes/vacunacionRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const comunidadRoutes = require("./routes/comunidadRoutes");
+const padreRoutes = require("./routes/padreRoutes");
 
 require("dotenv").config();
 
@@ -29,6 +31,8 @@ app.use("/api/pacientes", pacienteRoutes);
 app.use("/api/crecimiento", crecimientoRoutes);
 app.use("/api/vacunacion", vacunacionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/comunidades", comunidadRoutes);
+app.use("/api/padres", padreRoutes);
 
 // Verificar conexión a PostgreSQL
 app.get("/api/health", async (req, res) => {

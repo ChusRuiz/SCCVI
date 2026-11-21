@@ -10,7 +10,11 @@ import {
   X,
   UserRound,
   Eye,
+  MapPin,
+  UserPlus,
+  Check,
 } from "lucide-react";
+
 import api from "../services/api";
 import PerfilPaciente from "./PerfilPaciente";
 
@@ -20,33 +24,59 @@ const formularioInicial = {
   fecha_nacimiento: "",
   sexo: "masculino",
   cui: "",
-  nombre_encargado: "",
-  telefono_encargado: "",
   direccion: "",
+  id_comunidad: "",
+};
+
+const obtenerArreglo = (data, propiedad) => {
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data?.[propiedad])
+    ? data[propiedad]
+    : [];
 };
 
 export default function Pacientes() {
   const [pacientes, setPacientes] = useState([]);
+  const [comunidades, setComunidades] = useState([]);
+  const [padres, setPadres] = useState([]);
+
   const [busqueda, setBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
   const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState(null);
   const [perfilId, setPerfilId] = useState(null);
-  const [formulario, setFormulario] = useState(formularioInicial);
-  const [guardando, setGuardando] = useState(false);
 
-  // Cargar pacientes
+  const [formulario, setFormulario] = useState({
+    ...formularioInicial,
+  });
+
+  const [padresSeleccionados, setPadresSeleccionados] = useState([]);
+  const [relacionesPadres, setRelacionesPadres] = useState({});
+  const [contactoPrincipal, setContactoPrincipal] = useState("");
+
+  // ==========================================
+  // CARGAR PACIENTES
+  // ==========================================
+
   const cargarPacientes = async () => {
     try {
       setCargando(true);
       setError("");
 
       const response = await api.get("/pacientes");
-      const data = response.data;
 
-      setPacientes(Array.isArray(data) ? data : data.pacientes || []);
+      setPacientes(
+        obtenerArreglo(response.data, "pacientes")
+      );
     } catch (err) {
+      console.error("Error al cargar pacientes:", err);
+
       setError(
         err.response?.data?.mensaje ||
           "No se pudieron cargar los pacientes."
@@ -56,92 +86,363 @@ export default function Pacientes() {
     }
   };
 
+  // ==========================================
+  // CARGAR COMUNIDADES Y PADRES
+  // ==========================================
+
+  const cargarCatalogos = async () => {
+    try {
+      setCargandoCatalogos(true);
+
+      const [comunidadesResponse, padresResponse] =
+        await Promise.all([
+          api.get("/comunidades", {
+            params: { estado: "activa" },
+          }),
+          api.get("/padres", {
+            params: { estado: "activo" },
+          }),
+        ]);
+
+      setComunidades(
+        obtenerArreglo(
+          comunidadesResponse.data,
+          "comunidades"
+        ).filter((item) => item.estado === "activa")
+      );
+
+      setPadres(
+        obtenerArreglo(
+          padresResponse.data,
+          "padres"
+        ).filter((item) => item.estado === "activo")
+      );
+    } catch (err) {
+      console.error("Error al cargar catálogos:", err);
+
+      setError(
+        err.response?.data?.mensaje ||
+          "No se pudieron cargar las comunidades y los padres."
+      );
+    } finally {
+      setCargandoCatalogos(false);
+    }
+  };
+
   useEffect(() => {
     cargarPacientes();
+    cargarCatalogos();
   }, []);
 
-  // Buscar pacientes
+  // ==========================================
+  // FILTRAR PACIENTES
+  // ==========================================
+
   const pacientesFiltrados = useMemo(() => {
     const texto = busqueda.toLowerCase().trim();
 
     if (!texto) return pacientes;
 
-    return pacientes.filter((p) =>
-      `${p.nombres || ""} ${p.apellidos || ""} ${p.cui || ""}`
+    return pacientes.filter((paciente) =>
+      `${paciente.nombres || ""} ${
+        paciente.apellidos || ""
+      } ${paciente.cui || ""}`
         .toLowerCase()
         .includes(texto)
     );
   }, [pacientes, busqueda]);
 
-  // Abrir registro
-  const abrirNuevo = () => {
+  // ==========================================
+  // PADRES DISPONIBLES
+  // ==========================================
+
+  const padresDisponibles = useMemo(() => {
+    if (!formulario.id_comunidad) return [];
+
+    return padres.filter(
+      (padre) =>
+        Number(padre.id_comunidad) ===
+        Number(formulario.id_comunidad)
+    );
+  }, [padres, formulario.id_comunidad]);
+
+  // ==========================================
+  // ABRIR NUEVO PACIENTE
+  // ==========================================
+
+  const abrirNuevo = async () => {
+    setError("");
+    setMensaje("");
+
+    await cargarCatalogos();
+
     setEditando(null);
-    setFormulario({ ...formularioInicial });
+    setFormulario({
+      ...formularioInicial,
+    });
+
+    setPadresSeleccionados([]);
+    setRelacionesPadres({});
+    setContactoPrincipal("");
+
     setModal(true);
   };
 
-  // Abrir edición
-  const abrirEditar = (paciente) => {
+  // ==========================================
+  // ABRIR EDICIÓN
+  // ==========================================
+
+  const abrirEditar = async (paciente) => {
+    setError("");
+    setMensaje("");
+
+    await cargarCatalogos();
+
     setEditando(paciente);
 
     setFormulario({
       nombres: paciente.nombres || "",
       apellidos: paciente.apellidos || "",
-      fecha_nacimiento: paciente.fecha_nacimiento?.substring(0, 10) || "",
+      fecha_nacimiento:
+        paciente.fecha_nacimiento?.substring(0, 10) || "",
       sexo: paciente.sexo || "masculino",
       cui: paciente.cui || "",
-      nombre_encargado: paciente.nombre_encargado || "",
-      telefono_encargado: paciente.telefono_encargado || "",
       direccion: paciente.direccion || "",
+      id_comunidad: paciente.id_comunidad
+        ? String(paciente.id_comunidad)
+        : "",
     });
+
+    const asociaciones = Array.isArray(paciente.padres)
+      ? paciente.padres
+      : [];
+
+    const seleccionados = asociaciones.map(
+      (padre) => String(padre.id_padre)
+    );
+
+    const parentescos = {};
+
+    asociaciones.forEach((padre) => {
+      parentescos[String(padre.id_padre)] =
+        padre.parentesco || "Tutor";
+    });
+
+    const principal = asociaciones.find(
+      (padre) => padre.es_contacto_principal
+    );
+
+    setPadresSeleccionados(seleccionados);
+    setRelacionesPadres(parentescos);
+    setContactoPrincipal(
+      principal ? String(principal.id_padre) : ""
+    );
 
     setModal(true);
   };
 
-  // Cerrar modal
+  // ==========================================
+  // CERRAR MODAL
+  // ==========================================
+
   const cerrarModal = () => {
+    if (guardando) return;
+
     setModal(false);
     setEditando(null);
-    setFormulario({ ...formularioInicial });
+
+    setFormulario({
+      ...formularioInicial,
+    });
+
+    setPadresSeleccionados([]);
+    setRelacionesPadres({});
+    setContactoPrincipal("");
   };
 
-  // Cambiar campos
+  // ==========================================
+  // CAMBIAR CAMPOS
+  // ==========================================
+
   const cambiarCampo = (e) => {
     const { name, value } = e.target;
-    setFormulario((prev) => ({ ...prev, [name]: value }));
+
+    setFormulario((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (name === "id_comunidad") {
+      setPadresSeleccionados([]);
+      setRelacionesPadres({});
+      setContactoPrincipal("");
+    }
   };
 
-  // Guardar paciente
+  // ==========================================
+  // SELECCIONAR O QUITAR PADRES
+  // ==========================================
+
+  const alternarPadre = (idPadre) => {
+    const id = String(idPadre);
+
+    setPadresSeleccionados((prev) => {
+      const existe = prev.includes(id);
+
+      if (existe) {
+        const nuevos = prev.filter(
+          (item) => item !== id
+        );
+
+        setRelacionesPadres((actual) => {
+          const copia = { ...actual };
+          delete copia[id];
+          return copia;
+        });
+
+        if (contactoPrincipal === id) {
+          setContactoPrincipal(nuevos[0] || "");
+        }
+
+        return nuevos;
+      }
+
+      setRelacionesPadres((actual) => ({
+        ...actual,
+        [id]: "Tutor",
+      }));
+
+      if (!contactoPrincipal) {
+        setContactoPrincipal(id);
+      }
+
+      return [...prev, id];
+    });
+  };
+
+  // ==========================================
+  // CAMBIAR PARENTESCO
+  // ==========================================
+
+  const cambiarParentesco = (idPadre, valor) => {
+    setRelacionesPadres((prev) => ({
+      ...prev,
+      [String(idPadre)]: valor,
+    }));
+  };
+
+  // ==========================================
+  // CONSTRUIR ARREGLO DE RESPONSABLES
+  // ==========================================
+
+  const construirAsociaciones = () => {
+    return padresSeleccionados.map((id) => ({
+      id_padre: Number(id),
+      parentesco: relacionesPadres[id] || "Tutor",
+      es_contacto_principal: id === contactoPrincipal,
+    }));
+  };
+
+  // ==========================================
+  // VALIDAR RESPONSABLES
+  // ==========================================
+
+  const validarResponsables = () => {
+    if (padresSeleccionados.length === 0) {
+      return "Selecciona al menos un padre o encargado registrado.";
+    }
+
+    if (!contactoPrincipal) {
+      return "Debes designar un contacto principal.";
+    }
+
+    if (!padresSeleccionados.includes(contactoPrincipal)) {
+      return "El contacto principal debe estar seleccionado.";
+    }
+
+    return null;
+  };
+
+  // ==========================================
+  // GUARDAR PACIENTE
+  // ==========================================
+
   const guardarPaciente = async (e) => {
     e.preventDefault();
+
+    if (!formulario.id_comunidad) {
+      setError("Debes seleccionar una comunidad.");
+      return;
+    }
+
+    const errorResponsables = validarResponsables();
+
+    if (errorResponsables) {
+      setError(errorResponsables);
+      return;
+    }
+
+    if (cargandoCatalogos) {
+      setError("Espera a que terminen de cargar los datos.");
+      return;
+    }
 
     try {
       setGuardando(true);
       setError("");
+      setMensaje("");
+
+      const datos = {
+        ...formulario,
+        id_comunidad: Number(formulario.id_comunidad),
+        padres: construirAsociaciones(),
+      };
 
       if (editando) {
         await api.put(
           `/pacientes/${editando.id_paciente}`,
-          formulario
+          datos
         );
+
+        setMensaje("Paciente actualizado correctamente.");
       } else {
-        await api.post("/pacientes", formulario);
+        await api.post("/pacientes", datos);
+
+        setMensaje(
+          "Paciente y responsables registrados correctamente."
+        );
       }
 
-      cerrarModal();
+      setModal(false);
+      setEditando(null);
+
+      setFormulario({
+        ...formularioInicial,
+      });
+
+      setPadresSeleccionados([]);
+      setRelacionesPadres({});
+      setContactoPrincipal("");
+
       await cargarPacientes();
+
     } catch (err) {
+      console.error("Error al guardar paciente:", err);
+
       setError(
         err.response?.data?.mensaje ||
-          err.response?.data?.error ||
           "No se pudo guardar el paciente."
       );
+
     } finally {
       setGuardando(false);
     }
   };
 
-  // Desactivar paciente
+  // ==========================================
+  // DESACTIVAR PACIENTE
+  // ==========================================
+
   const desactivarPaciente = async (paciente) => {
     const confirmar = window.confirm(
       `¿Deseas desactivar a ${paciente.nombres} ${paciente.apellidos}?`
@@ -151,10 +452,13 @@ export default function Pacientes() {
 
     try {
       setError("");
+      setMensaje("");
 
       await api.patch(
         `/pacientes/${paciente.id_paciente}/desactivar`
       );
+
+      setMensaje("Paciente desactivado correctamente.");
 
       await cargarPacientes();
     } catch (err) {
@@ -165,38 +469,57 @@ export default function Pacientes() {
     }
   };
 
-  // Calcular edad
+  // ==========================================
+  // CALCULAR EDAD
+  // ==========================================
+
   const calcularEdad = (fecha) => {
     if (!fecha) return "—";
 
-    const nacimiento = new Date(`${fecha.substring(0, 10)}T00:00:00`);
+    const nacimiento = new Date(
+      `${String(fecha).substring(0, 10)}T00:00:00`
+    );
+
     const hoy = new Date();
 
-    let años = hoy.getFullYear() - nacimiento.getFullYear();
+    let anios = hoy.getFullYear() - nacimiento.getFullYear();
     let meses = hoy.getMonth() - nacimiento.getMonth();
 
-    if (hoy.getDate() < nacimiento.getDate()) meses--;
+    if (hoy.getDate() < nacimiento.getDate()) {
+      meses--;
+    }
 
     if (meses < 0) {
-      años--;
+      anios--;
       meses += 12;
     }
 
-    if (años <= 0) return `${Math.max(meses, 0)} meses`;
+    if (anios <= 0) {
+      return `${Math.max(meses, 0)} meses`;
+    }
 
-    return `${años} años`;
+    return `${anios} años`;
   };
 
-  // Formatear fecha
+  // ==========================================
+  // FORMATEAR FECHA
+  // ==========================================
+
   const formatearFecha = (fecha) => {
     if (!fecha) return "—";
 
-    return new Date(
-      `${fecha.substring(0, 10)}T00:00:00`
-    ).toLocaleDateString("es-GT");
+    const [anio, mes, dia] = String(fecha)
+      .substring(0, 10)
+      .split("-")
+      .map(Number);
+
+    return new Date(anio, mes - 1, dia).toLocaleDateString("es-GT");
   };
 
-  // Mostrar perfil individual
+  // ==========================================
+  // PERFIL INDIVIDUAL
+  // ==========================================
+
   if (perfilId !== null) {
     return (
       <PerfilPaciente
@@ -206,9 +529,13 @@ export default function Pacientes() {
     );
   }
 
+  // ==========================================
+  // INTERFAZ
+  // ==========================================
+
   return (
     <div className="patients-page">
-      {/* Encabezado */}
+
       <div className="patients-header">
         <div>
           <div className="patients-title">
@@ -225,14 +552,19 @@ export default function Pacientes() {
 
         <div className="patients-header-actions">
           <button
+            type="button"
             className="patients-btn patients-btn-outline"
-            onClick={cargarPacientes}
+            onClick={() => {
+              cargarPacientes();
+              cargarCatalogos();
+            }}
             title="Actualizar"
           >
             <RefreshCw size={17} />
           </button>
 
           <button
+            type="button"
             className="patients-btn patients-btn-primary"
             onClick={abrirNuevo}
           >
@@ -242,10 +574,20 @@ export default function Pacientes() {
         </div>
       </div>
 
-      {/* Errores */}
-      {error && <div className="patients-error">{error}</div>}
+      {error && (
+        <div className="patients-error">
+          {error}
+        </div>
+      )}
 
-      {/* Buscador */}
+      {mensaje && (
+        <div className="patients-success">
+          {mensaje}
+        </div>
+      )}
+
+      {/* BUSCADOR */}
+
       <div className="patients-toolbar">
         <div className="patients-search">
           <Search size={18} />
@@ -258,14 +600,18 @@ export default function Pacientes() {
           />
 
           {busqueda && (
-            <button onClick={() => setBusqueda("")}>
+            <button
+              type="button"
+              onClick={() => setBusqueda("")}
+            >
               <X size={16} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* TABLA */}
+
       <div className="patients-table-container">
         <table className="patients-table">
           <thead>
@@ -275,7 +621,8 @@ export default function Pacientes() {
               <th>Fecha nacimiento</th>
               <th>Edad</th>
               <th>Sexo</th>
-              <th>Encargado</th>
+              <th>Comunidad</th>
+              <th>Encargado principal</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -284,116 +631,134 @@ export default function Pacientes() {
           <tbody>
             {cargando ? (
               <tr>
-                <td colSpan="8" className="patients-empty">
+                <td colSpan="9" className="patients-empty">
                   Cargando pacientes...
                 </td>
               </tr>
             ) : pacientesFiltrados.length === 0 ? (
               <tr>
-                <td colSpan="8" className="patients-empty">
+                <td colSpan="9" className="patients-empty">
                   {busqueda
                     ? "No se encontraron pacientes."
                     : "Todavía no hay pacientes registrados."}
                 </td>
               </tr>
             ) : (
-              pacientesFiltrados.map((paciente) => (
-                <tr key={paciente.id_paciente}>
-                  {/* Nombre */}
-                  <td>
-                    <div className="patients-person">
-                      <div className="patients-avatar">
-                        <UserRound size={18} />
+              pacientesFiltrados.map((paciente) => {
+                const principal = Array.isArray(paciente.padres)
+                  ? paciente.padres.find(
+                      (padre) => padre.es_contacto_principal
+                    )
+                  : null;
+
+                const nombrePrincipal = principal
+                  ? `${principal.nombres} ${principal.apellidos}`
+                  : paciente.nombre_encargado || "—";
+
+                return (
+                  <tr key={paciente.id_paciente}>
+                    <td>
+                      <div className="patients-person">
+                        <div className="patients-avatar">
+                          <UserRound size={18} />
+                        </div>
+
+                        <div>
+                          <strong>
+                            {paciente.nombres} {paciente.apellidos}
+                          </strong>
+                          <span>Paciente infantil</span>
+                        </div>
                       </div>
+                    </td>
 
-                      <div>
-                        <strong>
-                          {paciente.nombres} {paciente.apellidos}
-                        </strong>
-                        <span>Paciente infantil</span>
-                      </div>
-                    </div>
-                  </td>
+                    <td>{paciente.cui || "—"}</td>
+                    <td>
+                      {formatearFecha(paciente.fecha_nacimiento)}
+                    </td>
+                    <td>
+                      {calcularEdad(paciente.fecha_nacimiento)}
+                    </td>
+                    <td>
+                      {paciente.sexo === "masculino"
+                        ? "Masculino"
+                        : "Femenino"}
+                    </td>
+                    <td>
+                      <span className="patients-community-cell">
+                        <MapPin size={13} />
+                        {paciente.comunidad_nombre || "Sin comunidad"}
+                      </span>
+                    </td>
+                    <td>{nombrePrincipal}</td>
 
-                  <td>{paciente.cui || "—"}</td>
-
-                  <td>{formatearFecha(paciente.fecha_nacimiento)}</td>
-
-                  <td>{calcularEdad(paciente.fecha_nacimiento)}</td>
-
-                  <td>
-                    {paciente.sexo === "masculino"
-                      ? "Masculino"
-                      : "Femenino"}
-                  </td>
-
-                  <td>{paciente.nombre_encargado || "—"}</td>
-
-                  {/* Estado */}
-                  <td>
-                    <span
-                      className={`patients-status ${
-                        paciente.estado === "inactivo"
-                          ? "inactive"
-                          : "active"
-                      }`}
-                    >
-                      {paciente.estado === "inactivo"
-                        ? "Inactivo"
-                        : "Activo"}
-                    </span>
-                  </td>
-
-                  {/* Acciones */}
-                  <td>
-                    <div className="patients-actions">
-                      {/* Ver perfil */}
-                      <button
-                        className="patients-btn patients-btn-small"
-                        title="Ver perfil"
-                        onClick={() =>
-                          setPerfilId(paciente.id_paciente)
-                        }
+                    <td>
+                      <span
+                        className={`patients-status ${
+                          paciente.estado === "inactivo"
+                            ? "inactive"
+                            : "active"
+                        }`}
                       >
-                        <Eye size={15} />
-                      </button>
+                        {paciente.estado === "inactivo"
+                          ? "Inactivo"
+                          : "Activo"}
+                      </span>
+                    </td>
 
-                      {/* Editar */}
-                      <button
-                        className="patients-btn patients-btn-small"
-                        title="Editar paciente"
-                        onClick={() => abrirEditar(paciente)}
-                      >
-                        <Pencil size={15} />
-                      </button>
-
-                      {/* Desactivar */}
-                      {paciente.estado !== "inactivo" && (
+                    <td>
+                      <div className="patients-actions">
                         <button
-                          className="patients-btn patients-btn-small patients-btn-danger"
-                          title="Desactivar paciente"
-                          onClick={() => desactivarPaciente(paciente)}
+                          type="button"
+                          className="patients-btn patients-btn-small"
+                          title="Ver perfil"
+                          onClick={() =>
+                            setPerfilId(paciente.id_paciente)
+                          }
                         >
-                          <UserX size={15} />
+                          <Eye size={15} />
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+
+                        <button
+                          type="button"
+                          className="patients-btn patients-btn-small"
+                          title="Editar paciente"
+                          onClick={() => abrirEditar(paciente)}
+                        >
+                          <Pencil size={15} />
+                        </button>
+
+                        {paciente.estado !== "inactivo" && (
+                          <button
+                            type="button"
+                            className="patients-btn patients-btn-small patients-btn-danger"
+                            title="Desactivar paciente"
+                            onClick={() => desactivarPaciente(paciente)}
+                          >
+                            <UserX size={15} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Modal de registro y edición */}
+      {/* ======================================
+          MODAL DE REGISTRO Y EDICIÓN
+      ====================================== */}
+
       {modal && (
         <div
           className="patients-modal-overlay"
           onClick={cerrarModal}
         >
           <div
-            className="patients-modal"
+            className="patients-modal patients-modal-integrado"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="patients-modal-header">
@@ -404,15 +769,16 @@ export default function Pacientes() {
 
                 <p>
                   {editando
-                    ? "Actualiza la información del paciente."
-                    : "Completa la información para registrar al paciente."}
+                    ? "Actualiza los datos del paciente y sus responsables."
+                    : "Completa la información del niño y selecciona sus responsables."}
                 </p>
               </div>
 
               <button
+                type="button"
                 className="patients-btn"
                 onClick={cerrarModal}
-                type="button"
+                disabled={guardando}
               >
                 <X size={18} />
               </button>
@@ -420,12 +786,14 @@ export default function Pacientes() {
 
             <form onSubmit={guardarPaciente}>
               <div className="patients-form-grid">
+
                 <div className="patients-field">
                   <label>Nombres *</label>
                   <input
                     name="nombres"
                     value={formulario.nombres}
                     onChange={cambiarCampo}
+                    maxLength={150}
                     required
                   />
                 </div>
@@ -436,6 +804,7 @@ export default function Pacientes() {
                     name="apellidos"
                     value={formulario.apellidos}
                     onChange={cambiarCampo}
+                    maxLength={150}
                     required
                   />
                 </div>
@@ -446,6 +815,10 @@ export default function Pacientes() {
                     type="date"
                     name="fecha_nacimiento"
                     value={formulario.fecha_nacimiento}
+                    max={new Date(
+                      Date.now() -
+                      new Date().getTimezoneOffset() * 60000
+                    ).toISOString().slice(0, 10)}
                     onChange={cambiarCampo}
                     required
                   />
@@ -470,26 +843,32 @@ export default function Pacientes() {
                     name="cui"
                     value={formulario.cui}
                     onChange={cambiarCampo}
-                    maxLength="13"
+                    maxLength={13}
+                    placeholder="13 dígitos"
                   />
                 </div>
 
                 <div className="patients-field">
-                  <label>Teléfono encargado</label>
-                  <input
-                    name="telefono_encargado"
-                    value={formulario.telefono_encargado}
+                  <label>Comunidad *</label>
+                  <select
+                    name="id_comunidad"
+                    value={formulario.id_comunidad}
                     onChange={cambiarCampo}
-                  />
-                </div>
+                    required
+                  >
+                    <option value="">
+                      Selecciona una comunidad
+                    </option>
 
-                <div className="patients-field patients-field-full">
-                  <label>Nombre del encargado</label>
-                  <input
-                    name="nombre_encargado"
-                    value={formulario.nombre_encargado}
-                    onChange={cambiarCampo}
-                  />
+                    {comunidades.map((comunidad) => (
+                      <option
+                        key={comunidad.id_comunidad}
+                        value={comunidad.id_comunidad}
+                      >
+                        {comunidad.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="patients-field patients-field-full">
@@ -498,17 +877,135 @@ export default function Pacientes() {
                     name="direccion"
                     value={formulario.direccion}
                     onChange={cambiarCampo}
-                    rows="2"
+                    rows={2}
+                    placeholder="Dirección o referencia del domicilio"
                   />
                 </div>
               </div>
 
-              {/* Botones */}
+              {/* PADRES Y ENCARGADOS */}
+
+              <div className="patients-parents-section">
+                <div className="patients-parents-heading">
+                  <div>
+                    <h3>
+                      <UserPlus size={18} />
+                      Padres y encargados
+                    </h3>
+
+                    <p>
+                      Selecciona los responsables registrados en la comunidad.
+                    </p>
+                  </div>
+                </div>
+
+                {!formulario.id_comunidad ? (
+                  <div className="patients-parents-empty">
+                    Primero selecciona una comunidad para consultar
+                    sus responsables.
+                  </div>
+                ) : cargandoCatalogos ? (
+                  <div className="patients-parents-empty">
+                    Cargando responsables...
+                  </div>
+                ) : padresDisponibles.length === 0 ? (
+                  <div className="patients-parents-empty">
+                    No hay padres activos registrados en esta comunidad.
+                    <br />
+                    Primero registra al responsable en el módulo
+                    Padres de familia.
+                  </div>
+                ) : (
+                  <div className="patients-parents-list">
+                    {padresDisponibles.map((padre) => {
+                      const id = String(padre.id_padre);
+                      const seleccionado =
+                        padresSeleccionados.includes(id);
+
+                      return (
+                        <div
+                          key={id}
+                          className={`patients-parent-option ${
+                            seleccionado ? "selected" : ""
+                          }`}
+                        >
+                          <label className="patients-parent-select">
+                            <input
+                              type="checkbox"
+                              checked={seleccionado}
+                              onChange={() => alternarPadre(id)}
+                            />
+
+                            <span className="patients-parent-check">
+                              {seleccionado && <Check size={14} />}
+                            </span>
+
+                            <span className="patients-parent-name">
+                              {padre.nombres} {padre.apellidos}
+
+                              <small>
+                                {padre.telefono || "Sin teléfono registrado"}
+                              </small>
+                            </span>
+                          </label>
+
+                          {seleccionado && (
+                            <div className="patients-parent-fields">
+                              <select
+                                aria-label={`Parentesco de ${padre.nombres}`}
+                                value={relacionesPadres[id] || "Tutor"}
+                                onChange={(e) =>
+                                  cambiarParentesco(id, e.target.value)
+                                }
+                              >
+                                <option value="Madre">Madre</option>
+                                <option value="Padre">Padre</option>
+                                <option value="Tutor">Tutor</option>
+                                <option value="Abuela">Abuela</option>
+                                <option value="Abuelo">Abuelo</option>
+                                <option value="Encargado">Encargado</option>
+                                <option value="Otro">Otro</option>
+                              </select>
+
+                              <label className="patients-main-contact">
+                                <input
+                                  type="radio"
+                                  name="contacto_principal"
+                                  checked={contactoPrincipal === id}
+                                  onChange={() =>
+                                    setContactoPrincipal(id)
+                                  }
+                                />
+                                Contacto principal
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {padresSeleccionados.length > 0 && (
+                  <div className="patients-parents-summary">
+                    {padresSeleccionados.length} responsable(s) seleccionado(s).
+                    {contactoPrincipal && (
+                      <span>
+                        {" "}Contacto principal asignado.
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* PIE */}
+
               <div className="patients-modal-footer">
                 <button
                   type="button"
                   className="patients-btn patients-btn-outline"
                   onClick={cerrarModal}
+                  disabled={guardando}
                 >
                   Cancelar
                 </button>
@@ -516,13 +1013,28 @@ export default function Pacientes() {
                 <button
                   type="submit"
                   className="patients-btn patients-btn-primary"
-                  disabled={guardando}
+                  disabled={
+                    guardando ||
+                    cargandoCatalogos ||
+                    comunidades.length === 0
+                  }
                 >
-                  {guardando
-                    ? "Guardando..."
-                    : editando
-                    ? "Guardar cambios"
-                    : "Registrar paciente"}
+                  {guardando ? (
+                    <>
+                      <RefreshCw
+                        size={16}
+                        className="patients-loading-icon"
+                      />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={17} />
+                      {editando
+                        ? "Guardar cambios"
+                        : "Registrar paciente"}
+                    </>
+                  )}
                 </button>
               </div>
             </form>

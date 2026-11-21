@@ -3,6 +3,8 @@
 @import "./styles/layout.css";
 @import "./styles/dashboard.css";
 @import "./styles/pacientes.css";
+@import "./styles/comunidades.css";
+@import "./styles/padres.css";
 @import "./styles/perfil-paciente.css";
 @import "./styles/crecimiento.css";
 @import "./styles/vacunacion.css";
