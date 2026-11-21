@@ -2,6 +2,7 @@ import { useState } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import MainLayout from "./components/layout/MainLayout";
+import Pacientes from "./pages/Pacientes";
 
 function App() {
   const [usuario, setUsuario] = useState(() => {
@@ -10,6 +11,7 @@ function App() {
   });
 
   const [activePage, setActivePage] = useState("dashboard");
+  
 
   const handleLogin = (user) => {
     setUsuario(user || { autenticado: true });
@@ -67,6 +69,7 @@ function App() {
           </p>
         </div>
       )}
+      {activePage === "pacientes" && <Pacientes />}
     </MainLayout>
   );
 }
