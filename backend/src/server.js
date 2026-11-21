@@ -6,6 +6,7 @@ const { verificarToken } = require("./middleware/authMiddleware");
 const pacienteRoutes = require("./routes/pacienteRoutes");
 const crecimientoRoutes = require("./routes/crecimientoRoutes");
 const vacunacionRoutes = require("./routes/vacunacionRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 require("dotenv").config();
 
@@ -27,6 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/pacientes", pacienteRoutes);
 app.use("/api/crecimiento", crecimientoRoutes);
 app.use("/api/vacunacion", vacunacionRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Verificar conexión a PostgreSQL
 app.get("/api/health", async (req, res) => {
