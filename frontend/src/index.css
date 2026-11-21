@@ -7,4 +7,6 @@
 @import "./styles/padres.css";
 @import "./styles/perfil-paciente.css";
 @import "./styles/crecimiento.css";
+@import "./styles/crecimiento-oms-extra.css";
+@import "./styles/perfil-paciente-percentiles.css";
 @import "./styles/vacunacion.css";

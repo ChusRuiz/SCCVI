@@ -1,4 +1,3 @@
-
 const pool = require("../config/db");
 
 const INDICADORES_VALIDOS = [
@@ -8,11 +7,31 @@ const INDICADORES_VALIDOS = [
   "perimetro_cefalico",
 ];
 
+function numero(valor) {
+  if (valor === null || valor === undefined || valor === "") return null;
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : null;
+}
+
+function archivoPerteneceA(fila, prefijo) {
+  return String(fila.archivo_origen || "")
+    .toLowerCase()
+    .startsWith(prefijo.toLowerCase());
+}
+
+/**
+ * Busca el valor LMS de OMS que corresponde a un indicador y una medida.
+ * Para peso/talla exige el tipo de referencia correcto:
+ *   - longitud: WFL (0 a 2 años)
+ *   - estatura: WFH (2 a 5 años)
+ * Para talla/edad selecciona LHFA por edad, sin mezclar los dos archivos.
+ */
 async function buscarReferenciaOMS({
   indicador,
   sexo,
   edadMeses,
   medidaCm,
+  tipoMedicion,
 }) {
   if (!INDICADORES_VALIDOS.includes(indicador)) {
     throw new Error("Indicador de crecimiento no válido");
@@ -22,130 +41,142 @@ async function buscarReferenciaOMS({
     throw new Error("Sexo no válido");
   }
 
-  if (edadMeses === undefined || edadMeses === null) {
-    throw new Error("La edad en meses es obligatoria");
-  }
-
-  const edad = Number(edadMeses);
-
-  if (!Number.isFinite(edad) || edad < 0 || edad > 60) {
-    throw new Error("La edad debe estar entre 0 y 60 meses");
-  }
-
   const esPesoTalla = indicador === "peso_talla";
+  const valorBuscado = esPesoTalla ? numero(medidaCm) : numero(edadMeses);
 
-  const valorBuscado = esPesoTalla
-    ? Number(medidaCm)
-    : edad;
-
-  if (!Number.isFinite(valorBuscado) || valorBuscado <= 0 && esPesoTalla) {
-    throw new Error("La medida de longitud o estatura no es válida");
+  if (valorBuscado === null || valorBuscado < 0) {
+    throw new Error("La edad o medida utilizada para buscar la referencia es inválida");
   }
 
-  // Consultar las referencias del indicador y sexo solicitados
-  const sql = `
-    SELECT
-      r.id_referencia,
-      r.indicador,
-      r.sexo,
-      r.archivo_origen,
-      r.version_referencia,
-      v.id_valor,
-      v.edad_meses,
-      v.medida_cm,
-      v.l,
-      v.m,
-      v.s,
-      v.sd3neg,
-      v.sd2neg,
-      v.sd1neg,
-      v.sd0,
-      v.sd1,
-      v.sd2,
-      v.sd3,
-      v.tipo_medicion
-    FROM referencias_crecimiento r
-    INNER JOIN valores_referencia_oms v
-      ON v.id_referencia = r.id_referencia
-    WHERE r.indicador = $1
-      AND r.sexo = $2
-      AND r.estado = TRUE
-  `;
+  let tipo = tipoMedicion;
+  if (esPesoTalla && !tipo && numero(edadMeses) !== null) {
+    tipo = Number(edadMeses) < 24 ? "longitud" : "estatura";
+  }
 
-  const { rows } = await pool.query(sql, [indicador, sexo]);
+  if (esPesoTalla && !["longitud", "estatura"].includes(tipo)) {
+    throw new Error("Para peso/talla debes indicar si la referencia es longitud o estatura");
+  }
+
+  const { rows } = await pool.query(
+    `SELECT
+        r.id_referencia,
+        r.indicador,
+        r.sexo,
+        r.archivo_origen,
+        r.version_referencia,
+        v.id_valor,
+        v.edad_meses,
+        v.medida_cm,
+        v.l,
+        v.m,
+        v.s,
+        v.sd3neg,
+        v.sd2neg,
+        v.sd1neg,
+        v.sd0,
+        v.sd1,
+        v.sd2,
+        v.sd3,
+        v.tipo_medicion
+     FROM referencias_crecimiento r
+     INNER JOIN valores_referencia_oms v
+       ON v.id_referencia = r.id_referencia
+     WHERE r.indicador = $1
+       AND r.sexo = $2
+       AND r.estado = TRUE
+     ORDER BY r.archivo_origen,
+              COALESCE(v.edad_meses, v.medida_cm)`,
+    [indicador, sexo]
+  );
 
   if (!rows.length) {
-    throw new Error(
-      `No existen referencias OMS para ${indicador} (${sexo})`
-    );
+    throw new Error(`No existen referencias OMS para ${indicador} (${sexo})`);
   }
 
-  let referenciasFiltradas = rows;
+  let filasAplicables = rows;
+  let columna = esPesoTalla ? "medida_cm" : "edad_meses";
 
-  // Seleccionar longitud para menores de 2 años
-  // y estatura desde los 2 años
   if (indicador === "talla_edad") {
-    const rangoArchivo =
-      edad < 24 ? "0-to-2-years" : "2-to-5-years";
-
-    referenciasFiltradas = rows.filter((fila) =>
-      fila.archivo_origen.toLowerCase().includes(rangoArchivo)
-    );
+    const edad = Number(edadMeses);
+    const prefijo = edad < 24 ? "lhfa_" : "lhfa_";
+    const fragmento = edad < 24 ? "0-to-2-years" : "2-to-5-years";
+    filasAplicables = rows.filter((fila) => {
+      const archivo = String(fila.archivo_origen || "").toLowerCase();
+      return archivo.startsWith(prefijo) && archivo.includes(fragmento);
+    });
   }
 
-  // Seleccionar peso para longitud o peso para estatura
-  // según la edad del paciente
   if (indicador === "peso_talla") {
-    const prefijo = edad < 24 ? "wfl_" : "wfh_";
-
-    referenciasFiltradas = rows.filter((fila) =>
-      fila.archivo_origen.toLowerCase().startsWith(prefijo)
-    );
+    const prefijo = tipo === "longitud" ? "wfl_" : "wfh_";
+    filasAplicables = rows.filter((fila) => archivoPerteneceA(fila, prefijo));
   }
 
-  if (!referenciasFiltradas.length) {
+  if (!filasAplicables.length) {
     throw new Error(
-      `No existe una referencia OMS apropiada para ${indicador}, ${sexo} y ${edad} meses`
+      `No se encontró una tabla OMS ${tipo || "compatible"} para ${indicador} (${sexo})`
     );
   }
 
-  const columna = esPesoTalla ? "medida_cm" : "edad_meses";
+  // Agrupar por archivo de referencia; así no se mezclan tablas distintas.
+  const gruposMap = new Map();
 
-  const filasValidas = referenciasFiltradas.filter((fila) => {
-    const valor = Number(fila[columna]);
-    return fila[columna] !== null && Number.isFinite(valor);
+  for (const fila of filasAplicables) {
+    const llave = fila.id_referencia;
+    if (!gruposMap.has(llave)) {
+      gruposMap.set(llave, {
+        id_referencia: fila.id_referencia,
+        archivo_origen: fila.archivo_origen,
+        version_referencia: fila.version_referencia,
+        filas: [],
+      });
+    }
+    gruposMap.get(llave).filas.push(fila);
+  }
+
+  const grupos = [...gruposMap.values()].map((grupo) => {
+    const valores = grupo.filas
+      .map((fila) => numero(fila[columna]))
+      .filter((valor) => valor !== null);
+
+    return {
+      ...grupo,
+      minimo: Math.min(...valores),
+      maximo: Math.max(...valores),
+    };
   });
 
-  if (!filasValidas.length) {
-    throw new Error("La referencia OMS no contiene valores válidos");
-  }
+  // No extrapolar fuera del intervalo de la tabla OMS.
+  const gruposQueContienen = grupos.filter(
+    (grupo) => valorBuscado >= grupo.minimo && valorBuscado <= grupo.maximo
+  );
 
-  const valores = filasValidas.map((fila) => Number(fila[columna]));
+  if (!gruposQueContienen.length) {
+    const rangos = grupos
+      .map((grupo) => `${grupo.archivo_origen}: ${grupo.minimo}–${grupo.maximo}`)
+      .join("; ");
 
-  const minimo = Math.min(...valores);
-  const maximo = Math.max(...valores);
-
-  // No extrapolar fuera de los límites de las tablas OMS
-  if (valorBuscado < minimo || valorBuscado > maximo) {
     throw new Error(
-      `El valor ${valorBuscado} está fuera del rango de referencia OMS (${minimo} a ${maximo})`
+      `La medida ${valorBuscado} está fuera del rango de las referencias OMS disponibles. Rangos: ${rangos}`
     );
   }
 
-  // Buscar la fila más cercana dentro del archivo correcto
-  const filasOrdenadas = [...filasValidas].sort(
+  const grupoSeleccionado = gruposQueContienen.sort(
+    (a, b) => (a.maximo - a.minimo) - (b.maximo - b.minimo)
+  )[0];
+
+  const filaSeleccionada = [...grupoSeleccionado.filas].sort(
     (a, b) =>
       Math.abs(Number(a[columna]) - valorBuscado) -
       Math.abs(Number(b[columna]) - valorBuscado)
-  );
-
-  const filaSeleccionada = filasOrdenadas[0];
+  )[0];
 
   return {
     ...filaSeleccionada,
+    id_valor_referencia: filaSeleccionada.id_valor,
+    tipo_medicion_referencia: tipo || null,
     rango_referencia: {
-      minimo,
-      maximo,
+      minimo: grupoSeleccionado.minimo,
+      maximo: grupoSeleccionado.maximo,
     },
   };
 }
