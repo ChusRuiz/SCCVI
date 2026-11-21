@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const pool = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
+const { verificarToken } = require("./middleware/authMiddleware");
+
 require("dotenv").config();
 
 const app = express();
@@ -16,6 +19,10 @@ app.get("/", (req, res) => {
   });
 });
 
+// Autenticación
+app.use("/api/auth", authRoutes);
+
+// Verificar conexión a PostgreSQL
 app.get("/api/health", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW() AS fecha");
@@ -29,9 +36,16 @@ app.get("/api/health", async (req, res) => {
     res.status(500).json({
       status: "ERROR",
       database: "No conectada",
-      mensaje: error.message,
     });
   }
+});
+
+// Ruta protegida de prueba
+app.get("/api/protegido", verificarToken, (req, res) => {
+  res.json({
+    mensaje: "Acceso autorizado",
+    usuario: req.usuario,
+  });
 });
 
 const PORT = process.env.PORT || 3000;
