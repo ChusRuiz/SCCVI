@@ -1112,3 +1112,153 @@ a {
     min-height: 140px;
   }
 }
+
+/* Dashboard real */
+
+.dashboard-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.06);
+  color: #ef7777;
+  font-size: 13px;
+}
+
+.dashboard-loading {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.dashboard-empty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.dashboard-empty svg {
+  color: var(--accent);
+}
+
+.recent-patients {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+}
+
+.recent-patient {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.recent-patient:last-child {
+  border-bottom: none;
+}
+
+.recent-patient-avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--bg);
+  color: var(--accent);
+}
+
+.recent-patient-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.recent-patient-info strong {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.recent-patient-info span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.patient-status {
+  padding: 5px 9px;
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.activity-summary {
+  margin-top: 18px;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.activity-row > div:nth-child(2) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activity-row strong {
+  font-size: 12px;
+}
+
+.activity-row span {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.activity-row > b {
+  font-size: 14px;
+  color: var(--text);
+}

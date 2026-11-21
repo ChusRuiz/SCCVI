@@ -15,9 +15,10 @@ const obtenerDashboard = async (req, res) => {
     );
 
     const pendientes = await db.query(
-      `SELECT COUNT(*) AS total
-       FROM vacunaciones
-       WHERE proxima_dosis IS NOT NULL`
+        `SELECT COUNT(*) AS total
+        FROM vacunaciones
+        WHERE proxima_dosis IS NOT NULL
+        AND proxima_dosis >= CURRENT_DATE`
     );
 
     const recientes = await db.query(
