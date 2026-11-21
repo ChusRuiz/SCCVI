@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import MainLayout from "./components/layout/MainLayout";
 import Pacientes from "./pages/Pacientes";
+import Crecimiento from "./pages/Crecimiento";
 
 function App() {
   const [usuario, setUsuario] = useState(() => {
@@ -70,6 +71,7 @@ function App() {
         </div>
       )}
       {activePage === "pacientes" && <Pacientes />}
+      {activePage === "crecimiento" && <Crecimiento />}
     </MainLayout>
   );
 }
