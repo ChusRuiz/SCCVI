@@ -4,6 +4,7 @@ const pool = require("../config/db");
 let iniciado = false;
 let offset = 0;
 let botInfo = null;
+let pollingAbortController = null;
 
 const pausa = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -11,7 +12,7 @@ function hashCodigo(codigo) {
   return crypto.createHash("sha256").update(codigo).digest("hex");
 }
 
-async function telegramRequest(metodo, body = {}) {
+async function telegramRequest(metodo, body = {}, signal) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error("Falta TELEGRAM_BOT_TOKEN.");
 
@@ -19,7 +20,7 @@ async function telegramRequest(metodo, body = {}) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(35000),
+    signal: signal || AbortSignal.timeout(35000),
   });
 
   const result = await response.json();
@@ -37,7 +38,6 @@ async function responder(chatId, texto) {
       disable_web_page_preview: true,
     });
   } catch (error) {
-    // No se deshace una vinculación ya confirmada por un fallo de respuesta al chat.
     console.error("No se pudo responder al chat de vinculación:", error.message);
   }
 }
@@ -45,7 +45,6 @@ async function responder(chatId, texto) {
 async function procesarCodigoVinculacion(codigo, chat, from) {
   const client = await pool.connect();
   let transaccion = false;
-  let respuesta = null;
 
   try {
     await client.query("BEGIN");
@@ -172,8 +171,10 @@ async function procesarCodigoVinculacion(codigo, chat, from) {
     await client.query("COMMIT");
     transaccion = false;
 
-    respuesta = `¡Cuenta vinculada correctamente con SCCVI!\n\nRegistro asociado: ${vinculo.nombres} ${vinculo.apellidos}.\n\nA partir de ahora podrás recibir notificaciones por Telegram. Si no reconoces este registro, comunícate con el centro de salud.`;
-    return { ok: true, mensaje: respuesta };
+    return {
+      ok: true,
+      mensaje: `¡Cuenta vinculada correctamente con SCCVI!\n\nRegistro asociado: ${vinculo.nombres} ${vinculo.apellidos}.\n\nA partir de ahora podrás recibir notificaciones por Telegram. Si no reconoces este registro, comunícate con el centro de salud.`,
+    };
   } catch (error) {
     if (transaccion) {
       await client.query("ROLLBACK");
@@ -232,7 +233,6 @@ async function guardarOffset(nuevoOffset) {
 }
 
 async function ejecutarPolling() {
-  // Recuperar el último update confirmado para no reprocesar mensajes al reiniciar Node.
   const estado = await pool.query(
     `SELECT last_update_id FROM telegram_polling_state WHERE id = 1`
   );
@@ -240,27 +240,30 @@ async function ejecutarPolling() {
 
   while (iniciado) {
     try {
+      pollingAbortController = new AbortController();
       const updates = await telegramRequest("getUpdates", {
         offset,
         timeout: 25,
         allowed_updates: ["message"],
-      });
+      }, pollingAbortController.signal);
+      pollingAbortController = null;
 
       for (const update of updates) {
+        if (!iniciado) break;
         try {
           await procesarUpdate(update);
         } catch (error) {
           console.error("Error procesando actualización de Telegram:", error.message);
-          // No avanzamos el offset ante un error de BD: Telegram volverá a entregar el update.
           await pausa(5000);
           break;
         }
-
         await guardarOffset(update.update_id + 1);
       }
     } catch (error) {
+      pollingAbortController = null;
+      if (!iniciado && error.name === "AbortError") break;
       console.error("Polling de Telegram detenido temporalmente:", error.message);
-      await pausa(5000);
+      if (iniciado) await pausa(5000);
     }
   }
 }
@@ -304,4 +307,13 @@ async function iniciarTelegramPolling() {
   }
 }
 
-module.exports = { iniciarTelegramPolling };
+function detenerTelegramPolling() {
+  iniciado = false;
+  pollingAbortController?.abort();
+  pollingAbortController = null;
+}
+
+module.exports = {
+  iniciarTelegramPolling,
+  detenerTelegramPolling,
+};

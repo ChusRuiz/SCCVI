@@ -1,122 +1,91 @@
 const cron = require("node-cron");
 
-const {
-  generarAlertas
-} = require("../services/generadorAlertas");
-
-const {
-  generarNotificacionesDesdeAlertas
-} = require("../services/notificacionesService");
-
-const {
-  procesarColaNotificaciones
-} = require("../services/procesadorNotificaciones");
+const { generarAlertas } = require("../services/generadorAlertas");
+const { generarNotificacionesDesdeAlertas } = require("../services/notificacionesService");
+const { procesarColaNotificaciones } = require("../services/procesadorNotificaciones");
 
 let ejecutandoCola = false;
 let ejecutandoAlertas = false;
+let tareaCola = null;
+let tareaAlertas = null;
 
-// Generar notificaciones y procesar la cola.
 async function ejecutarCola() {
   if (ejecutandoCola) return;
-
   ejecutandoCola = true;
 
   try {
-    const generadas =
-      await generarNotificacionesDesdeAlertas();
-
-    const procesadas =
-      await procesarColaNotificaciones(20);
-
+    const generadas = await generarNotificacionesDesdeAlertas();
+    const procesadas = await procesarColaNotificaciones(20);
     console.log("[SCCVI] Cola revisada:", {
       nuevas: generadas.notificaciones_creadas,
       enviadas: procesadas.enviadas,
-      errores: procesadas.errores
+      errores: procesadas.errores,
     });
-
   } catch (error) {
-    console.error(
-      "[SCCVI] Error procesando notificaciones:",
-      error.message
-    );
-
+    console.error("[SCCVI] Error procesando notificaciones:", error.message);
   } finally {
     ejecutandoCola = false;
   }
 }
 
-// Generar alertas diariamente.
 async function ejecutarGeneracionDiaria() {
   if (ejecutandoAlertas) return;
-
   ejecutandoAlertas = true;
 
   try {
     console.log("[SCCVI] Iniciando generación diaria de alertas...");
-
     const alertas = await generarAlertas();
-
     console.log("[SCCVI] Resultado de alertas:", alertas);
 
-    // Crear notificaciones a partir de las nuevas alertas.
-    const notificaciones =
-      await generarNotificacionesDesdeAlertas();
-
-    console.log(
-      "[SCCVI] Notificaciones generadas:",
-      notificaciones
-    );
-
-    // Procesar inmediatamente la cola.
+    const notificaciones = await generarNotificacionesDesdeAlertas();
+    console.log("[SCCVI] Notificaciones generadas:", notificaciones);
     await ejecutarCola();
-
   } catch (error) {
-    console.error(
-      "[SCCVI] Error en generación diaria:",
-      error.message
-    );
-
+    console.error("[SCCVI] Error en generación diaria:", error.message);
   } finally {
     ejecutandoAlertas = false;
   }
 }
 
-// Iniciar las tareas programadas.
 function iniciarNotificacionesJob() {
+  if (tareaCola || tareaAlertas) {
+    console.warn("[SCCVI] El programador de notificaciones ya está iniciado.");
+    return;
+  }
 
-  // Revisar la cola cada minuto.
-  cron.schedule(
-    "* * * * *",
-    ejecutarCola,
-    {
-      name: "sccvi-cola-notificaciones",
-      timezone: "America/Guatemala",
-      noOverlap: true
-    }
-  );
+  tareaCola = cron.schedule("* * * * *", ejecutarCola, {
+    name: "sccvi-cola-notificaciones",
+    timezone: "America/Guatemala",
+    noOverlap: true,
+  });
 
-  // Generar alertas diariamente a las 7:00 AM.
-  cron.schedule(
-    "0 7 * * *",
-    ejecutarGeneracionDiaria,
-    {
-      name: "sccvi-generacion-alertas",
-      timezone: "America/Guatemala",
-      noOverlap: true
-    }
-  );
+  tareaAlertas = cron.schedule("0 7 * * *", ejecutarGeneracionDiaria, {
+    name: "sccvi-generacion-alertas",
+    timezone: "America/Guatemala",
+    noOverlap: true,
+  });
 
   console.log("----------------------------------");
-  console.log("SCCVI - TAREAS AUTOMATICAS ACTIVAS");
+  console.log("SCCVI - WORKER DE NOTIFICACIONES ACTIVO");
   console.log("Generación de alertas: 7:00 AM");
   console.log("Procesamiento de cola: cada minuto");
   console.log("Zona horaria: Guatemala");
   console.log("----------------------------------");
 
-  // Revisar la cola al iniciar el servidor.
   ejecutarCola();
 }
 
+function detenerNotificacionesJob() {
+  tareaCola?.stop();
+  tareaAlertas?.stop();
+  tareaCola = null;
+  tareaAlertas = null;
+  console.log("[SCCVI] Tareas programadas detenidas.");
+}
+
 module.exports = {
-  iniciarNotificacionesJob
+  iniciarNotificacionesJob,
+  detenerNotificacionesJob,
+  ejecutarCola,
+  ejecutarGeneracionDiaria,
 };
