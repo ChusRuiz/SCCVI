@@ -1,0 +1,38 @@
+# Copia como terraform.tfvars y revisa cada valor antes de usarlo.
+# No agregues contraseñas, tokens ni JWT_SECRET a este archivo.
+
+project_name = "sccvi"
+environment  = "prod"
+aws_region   = "us-east-1"
+aws_profile  = "sccvi"
+
+vpc_cidr           = "10.40.0.0/16"
+az_count           = 2
+single_nat_gateway = false
+
+# Necesario para producción: un dominio para el frontend y otro para el origen API.
+# La zona pública Route 53 debe existir y contener ambos nombres.
+frontend_domain_name = "app.tudominio.com"
+api_domain_name      = "api.tudominio.com"
+route53_zone_id      = "Z00000000000000000000"
+require_custom_domains_for_production = true
+
+db_name            = "sccvi"
+db_username        = "sccvi_master"
+db_engine_version  = "18.6"
+db_instance_class  = "db.m9g.large"
+db_allocated_storage = 30
+db_max_allocated_storage = 100
+db_multi_az        = true
+db_pool_max        = 5
+
+# Mantener ambos servicios apagados en la primera aplicación de infraestructura.
+# Se activarán tras subir imagen, cargar secretos y completar la migración de BD.
+api_desired_count    = 0
+worker_desired_count = 0
+container_image_tag  = "bootstrap"
+
+smtp_host             = "smtp.gmail.com"
+smtp_port             = 587
+smtp_user             = "tu_correo@gmail.com"
+telegram_bot_username = "SCCVIhBot"

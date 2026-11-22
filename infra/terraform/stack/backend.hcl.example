@@ -1,0 +1,7 @@
+# Copia este archivo como backend.hcl y reemplaza el bucket por el output
+# terraform_state_bucket del módulo bootstrap-state.
+bucket       = "REEMPLAZAR_CON_BUCKET_TERRAFORM_STATE"
+key          = "sccvi/prod/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true
