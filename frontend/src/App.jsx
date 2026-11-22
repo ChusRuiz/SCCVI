@@ -10,6 +10,7 @@ import Padres from "./pages/Padres";
 import Alertas from "./pages/Alertas";
 import Notificaciones from "./pages/Notificaciones";
 import CarnetPublico from "./pages/CarnetPublico";
+import Campanas from "./pages/Campanas";
 
 import MainLayout from "./components/layout/MainLayout";
 
@@ -86,6 +87,10 @@ notificaciones: {
   title: "Notificaciones",
   subtitle: "Historial de envíos por correo y Telegram",
 },
+campanas: {
+  title: "Campañas comunitarias",
+  subtitle: "Jornadas de vacunación y controles médicos",
+},
   };
 
   const contenido = {
@@ -96,6 +101,7 @@ notificaciones: {
     crecimiento: <Crecimiento />,
     alertas: <Alertas />,
     notificaciones: <Notificaciones />,
+    campanas: <Campanas />,
   };
 
   return (

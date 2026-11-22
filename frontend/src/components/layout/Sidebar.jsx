@@ -11,6 +11,7 @@ import {
   MapPin,
   UserRound,
   BellRing,
+  Megaphone,
   
 } from "lucide-react";
 
@@ -22,8 +23,8 @@ const menuItems = [
   { id: "crecimiento", label: "Crecimiento", icon: Activity },
   { id: "vacunacion", label: "Vacunación", icon: Syringe },
   { id: "alertas", label: "Alertas", icon: BellRing,},
-  { id: "notificaciones", label: "Notificaciones", icon: BellRing,
-},
+  { id: "notificaciones", label: "Notificaciones", icon: BellRing,},
+  { id: "campanas", label: "Campañas", icon: Megaphone },
 ];
 
 export default function Sidebar({
