@@ -1,10 +1,8 @@
-
 import {
   LayoutDashboard,
   Users,
   Activity,
   Syringe,
-  Settings,
   PanelLeftClose,
   PanelLeftOpen,
   HeartPulse,
@@ -13,7 +11,6 @@ import {
   BellRing,
   Megaphone,
   FileBarChart,
-  
 } from "lucide-react";
 
 const menuItems = [
@@ -23,10 +20,10 @@ const menuItems = [
   { id: "padres", label: "Padres de familia", icon: UserRound },
   { id: "crecimiento", label: "Crecimiento", icon: Activity },
   { id: "vacunacion", label: "Vacunación", icon: Syringe },
-  { id: "alertas", label: "Alertas", icon: BellRing,},
-  { id: "notificaciones", label: "Notificaciones", icon: BellRing,},
+  { id: "alertas", label: "Alertas", icon: BellRing },
+  { id: "notificaciones", label: "Notificaciones", icon: BellRing },
   { id: "campanas", label: "Campañas", icon: Megaphone },
-  { id: "reportes", label: "Reportes", icon: FileBarChart,},
+  { id: "reportes", label: "Reportes", icon: FileBarChart },
 ];
 
 export default function Sidebar({
@@ -54,7 +51,7 @@ export default function Sidebar({
         {!collapsed && "MENU PRINCIPAL"}
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Menú principal">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const active = activePage === item.id;
@@ -66,46 +63,29 @@ export default function Sidebar({
               className={`sidebar-item ${active ? "active" : ""}`}
               onClick={() => onNavigate(item.id)}
               title={collapsed ? item.label : undefined}
+              aria-current={active ? "page" : undefined}
             >
               <Icon size={19} strokeWidth={1.8} />
-
               {!collapsed && <span>{item.label}</span>}
-
-              {active && (
-                <span className="sidebar-active-indicator" />
-              )}
+              {active && <span className="sidebar-active-indicator" />}
             </button>
           );
         })}
       </nav>
 
       <div className="sidebar-bottom">
-        <div className="sidebar-divider" />
-
-        <button
-          type="button"
-          className={`sidebar-item ${
-            activePage === "configuracion" ? "active" : ""
-          }`}
-          onClick={() => onNavigate("configuracion")}
-          title={collapsed ? "Configuración" : undefined}
-        >
-          <Settings size={19} strokeWidth={1.8} />
-          {!collapsed && <span>Configuración</span>}
-        </button>
-
         <button
           type="button"
           className="sidebar-collapse-button"
           onClick={onToggleCollapse}
           title={collapsed ? "Expandir menú" : "Contraer menú"}
+          aria-label={collapsed ? "Expandir menú" : "Contraer menú"}
         >
           {collapsed ? (
             <PanelLeftOpen size={18} />
           ) : (
             <PanelLeftClose size={18} />
           )}
-
           {!collapsed && <span>Contraer menú</span>}
         </button>
       </div>

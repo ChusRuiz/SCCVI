@@ -15,6 +15,7 @@ const notificacionesRoutes = require("./routes/notificacionesRoutes");
 const carnetQrRoutes = require("./routes/carnetQrRoutes");
 const campanasRoutes = require("./routes/campanasRoutes");
 const reportesRoutes = require("./routes/reportesRoutes");
+const { iniciarTelegramPolling } = require("./services/telegramPollingService");
 
 require("dotenv").config();
 
@@ -44,6 +45,8 @@ app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/carnets", carnetQrRoutes);
 app.use("/api/campanas", campanasRoutes);
 app.use("/api/reportes", reportesRoutes);
+app.use("/api/carnets", carnetQrRoutes);
+
 
 // Verificar conexión a PostgreSQL
 app.get("/api/health", async (req, res) => {
@@ -75,6 +78,6 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Servidor iniciado en el puerto ${PORT}`);
-
   iniciarNotificacionesJob();
+  iniciarTelegramPolling();
 });

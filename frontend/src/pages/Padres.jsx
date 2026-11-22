@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   CircleOff,
   MessageCircle,
+  Copy,
+  ShieldCheck,
 } from "lucide-react";
 
 import api from "../services/api";
@@ -68,6 +70,17 @@ export default function Padres() {
   const [parentesco, setParentesco] = useState("Madre");
   const [esPrincipal, setEsPrincipal] = useState(false);
   const [guardandoAsociacion, setGuardandoAsociacion] = useState(false);
+
+  // Vinculación de Telegram
+  const [modalTelegram, setModalTelegram] = useState(false);
+  const [padreTelegram, setPadreTelegram] = useState(null);
+  const [estadoTelegram, setEstadoTelegram] = useState(null);
+  const [enlaceTelegram, setEnlaceTelegram] = useState(null);
+  const [cargandoTelegram, setCargandoTelegram] = useState(false);
+  const [generandoTelegram, setGenerandoTelegram] = useState(false);
+  const [telegramError, setTelegramError] = useState("");
+  const [telegramMensaje, setTelegramMensaje] = useState("");
+  const [enlaceCopiado, setEnlaceCopiado] = useState(false);
 
   // ============================================
   // CARGAR CATALOGOS
@@ -514,6 +527,119 @@ export default function Padres() {
   };
 
   // ============================================
+  // VINCULACIÓN DE TELEGRAM
+  // ============================================
+
+  const cargarEstadoTelegram = async (idPadre) => {
+    try {
+      setCargandoTelegram(true);
+      setTelegramError("");
+      const response = await api.get(`/padres/${idPadre}/telegram/estado`);
+      setEstadoTelegram(response.data.padre || null);
+    } catch (err) {
+      setTelegramError(
+        err.response?.data?.mensaje ||
+          "No se pudo consultar el estado de Telegram."
+      );
+    } finally {
+      setCargandoTelegram(false);
+    }
+  };
+
+  const abrirVinculacionTelegram = async (padre) => {
+    setPadreTelegram(padre);
+    setEstadoTelegram(null);
+    setEnlaceTelegram(null);
+    setTelegramError("");
+    setTelegramMensaje("");
+    setEnlaceCopiado(false);
+    setModalTelegram(true);
+    await cargarEstadoTelegram(padre.id_padre);
+  };
+
+  const generarEnlaceTelegram = async () => {
+    if (!padreTelegram) return;
+
+    try {
+      setGenerandoTelegram(true);
+      setTelegramError("");
+      setTelegramMensaje("");
+      setEnlaceCopiado(false);
+
+      const response = await api.post(
+        `/padres/${padreTelegram.id_padre}/telegram/vincular`
+      );
+
+      setEnlaceTelegram(response.data.vinculacion || null);
+      setTelegramMensaje(response.data.mensaje || "Enlace generado correctamente.");
+      await cargarEstadoTelegram(padreTelegram.id_padre);
+    } catch (err) {
+      setTelegramError(
+        err.response?.data?.mensaje ||
+          "No se pudo generar el enlace de Telegram."
+      );
+    } finally {
+      setGenerandoTelegram(false);
+    }
+  };
+
+  const copiarEnlaceTelegram = async () => {
+    if (!enlaceTelegram?.enlace) return;
+
+    try {
+      await navigator.clipboard.writeText(enlaceTelegram.enlace);
+      setEnlaceCopiado(true);
+      setTelegramMensaje("Enlace copiado. Compártelo únicamente con el padre correspondiente.");
+    } catch {
+      setTelegramError("El navegador no permitió copiar el enlace. Selecciónalo y cópialo manualmente.");
+    }
+  };
+
+  const actualizarEstadoTelegram = async () => {
+    if (!padreTelegram) return;
+    await cargarEstadoTelegram(padreTelegram.id_padre);
+    await cargarPadres();
+  };
+
+  const desvincularCuentaTelegram = async () => {
+    if (!padreTelegram || !estadoTelegram?.vinculado) return;
+
+    const confirmar = window.confirm(
+      `¿Deseas desvincular la cuenta de Telegram de ${estadoTelegram.nombre}? Dejará de recibir notificaciones por Telegram.`
+    );
+    if (!confirmar) return;
+
+    try {
+      setCargandoTelegram(true);
+      setTelegramError("");
+      const response = await api.delete(
+        `/padres/${padreTelegram.id_padre}/telegram/vincular`
+      );
+      setTelegramMensaje(response.data.mensaje || "Cuenta desvinculada.");
+      setEnlaceTelegram(null);
+      await cargarEstadoTelegram(padreTelegram.id_padre);
+      await cargarPadres();
+    } catch (err) {
+      setTelegramError(
+        err.response?.data?.mensaje ||
+          "No se pudo desvincular la cuenta."
+      );
+    } finally {
+      setCargandoTelegram(false);
+    }
+  };
+
+  const cerrarModalTelegram = () => {
+    if (generandoTelegram || cargandoTelegram) return;
+    setModalTelegram(false);
+    setPadreTelegram(null);
+    setEstadoTelegram(null);
+    setEnlaceTelegram(null);
+    setTelegramError("");
+    setTelegramMensaje("");
+  };
+
+  // ============================================
   // FORMATEAR CANAL
   // ============================================
 
@@ -756,6 +882,7 @@ export default function Padres() {
                   <th>Correo</th>
                   <th>Comunidad</th>
                   <th>Canal</th>
+                  <th>Telegram</th>
                   <th>Niños</th>
                   <th>Estado</th>
                   <th>Acciones</th>
@@ -808,6 +935,13 @@ export default function Padres() {
                       <td>{nombreCanal(padre.canal_preferido)}</td>
 
                       <td>
+                        <span className={`parents-telegram-status ${padre.telegram_chat_id ? "linked" : "unlinked"}`}>
+                          <span className="parents-telegram-dot" />
+                          {padre.telegram_chat_id ? "Vinculado" : "Sin vincular"}
+                        </span>
+                      </td>
+
+                      <td>
                         <span className="parents-count">
                           <Baby size={14} />
                           {Number(padre.total_ninos || 0)}
@@ -829,6 +963,16 @@ export default function Padres() {
                             title="Administrar niños"
                           >
                             <Link2 size={16} />
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`parents-action-btn ${padre.telegram_chat_id ? "parents-telegram-action-linked" : ""}`}
+                            onClick={() => abrirVinculacionTelegram(padre)}
+                            title={padre.telegram_chat_id ? "Administrar vínculo Telegram" : "Vincular Telegram"}
+                            disabled={!activo}
+                          >
+                            <MessageCircle size={16} />
                           </button>
 
                           <button
@@ -1246,6 +1390,168 @@ export default function Padres() {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================
+          MODAL DE VINCULACIÓN TELEGRAM
+      ====================================== */}
+      {modalTelegram && (
+        <div className="parents-modal-overlay" onClick={cerrarModalTelegram}>
+          <div
+            className="parents-modal parents-telegram-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="parents-modal-header">
+              <div>
+                <div className="parents-modal-icon parents-telegram-icon">
+                  <MessageCircle size={22} />
+                </div>
+                <h2>Vincular Telegram</h2>
+                <p>
+                  {padreTelegram
+                    ? `${padreTelegram.nombres} ${padreTelegram.apellidos}`
+                    : "Padre de familia"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="parents-action-btn"
+                onClick={cerrarModalTelegram}
+                disabled={generandoTelegram || cargandoTelegram}
+                aria-label="Cerrar"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            {telegramError && (
+              <div className="parents-alert parents-alert-error">
+                <span>{telegramError}</span>
+                <button type="button" onClick={() => setTelegramError("")} aria-label="Cerrar">
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            {telegramMensaje && (
+              <div className="parents-alert parents-alert-success">
+                <CheckCircle2 size={17} />
+                <span>{telegramMensaje}</span>
+                <button type="button" onClick={() => setTelegramMensaje("")} aria-label="Cerrar">
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            {cargandoTelegram && !estadoTelegram ? (
+              <div className="parents-empty">
+                <RefreshCw size={23} className="parents-spin" />
+                <strong>Consultando vinculación...</strong>
+              </div>
+            ) : estadoTelegram ? (
+              <div className="parents-telegram-content">
+                <div className={`parents-telegram-status-card ${estadoTelegram.vinculado ? "is-linked" : "is-unlinked"}`}>
+                  <div className="parents-telegram-status-icon">
+                    {estadoTelegram.vinculado ? <ShieldCheck size={23} /> : <MessageCircle size={23} />}
+                  </div>
+                  <div>
+                    <strong>{estadoTelegram.vinculado ? "Cuenta de Telegram vinculada" : "Telegram sin vincular"}</strong>
+                    <span>
+                      {estadoTelegram.vinculado
+                        ? (estadoTelegram.telegram_username
+                            ? `@${estadoTelegram.telegram_username}`
+                            : "La cuenta ya está asociada al registro.")
+                        : "Genera un enlace personal para el padre o tutor."}
+                    </span>
+                  </div>
+                </div>
+
+                {estadoTelegram.vinculado ? (
+                  <>
+                    {estadoTelegram.vinculado_en && (
+                      <p className="parents-telegram-meta">
+                        Vinculado el {new Date(estadoTelegram.vinculado_en).toLocaleString("es-GT")}
+                      </p>
+                    )}
+                    <div className="parents-telegram-note">
+                      Esta cuenta recibirá las notificaciones cuando el canal preferido del padre sea Telegram.
+                    </div>
+                    <div className="parents-modal-footer">
+                      <button
+                        type="button"
+                        className="parents-btn parents-btn-outline"
+                        onClick={actualizarEstadoTelegram}
+                        disabled={cargandoTelegram}
+                      >
+                        <RefreshCw size={16} /> Actualizar estado
+                      </button>
+                      <button
+                        type="button"
+                        className="parents-btn parents-btn-danger"
+                        onClick={desvincularCuentaTelegram}
+                        disabled={cargandoTelegram}
+                      >
+                        <Unlink size={16} /> Desvincular
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="parents-telegram-steps">
+                      <strong>Cómo vincular la cuenta</strong>
+                      <ol>
+                        <li>Genera un enlace personal desde este panel.</li>
+                        <li>Compártelo únicamente con el padre registrado.</li>
+                        <li>El padre abre el enlace desde Telegram y presiona Iniciar.</li>
+                        <li>Actualiza el estado para confirmar la vinculación.</li>
+                      </ol>
+                    </div>
+
+                    {enlaceTelegram?.enlace && (
+                      <div className="parents-telegram-link-box">
+                        <label>Enlace personal de vinculación</label>
+                        <div className="parents-telegram-link-text">
+                          {enlaceTelegram.enlace}
+                        </div>
+                        <div className="parents-telegram-link-actions">
+                          <button type="button" className="parents-btn parents-btn-outline" onClick={copiarEnlaceTelegram}>
+                            <Copy size={16} /> {enlaceCopiado ? "Copiado" : "Copiar enlace"}
+                          </button>
+                          <span>Vence: {new Date(enlaceTelegram.expira_en).toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" })}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="parents-telegram-note">
+                      El enlace es de un solo uso y vence en 10 minutos. No lo publiques en grupos ni lo compartas con otro padre.
+                    </div>
+                    <div className="parents-modal-footer">
+                      <button
+                        type="button"
+                        className="parents-btn parents-btn-outline"
+                        onClick={actualizarEstadoTelegram}
+                        disabled={cargandoTelegram}
+                      >
+                        <RefreshCw size={16} /> Actualizar estado
+                      </button>
+                      <button
+                        type="button"
+                        className="parents-btn parents-btn-primary"
+                        onClick={generarEnlaceTelegram}
+                        disabled={generandoTelegram || cargandoTelegram || estadoTelegram.estado !== "activo"}
+                      >
+                        {generandoTelegram ? <RefreshCw size={16} className="parents-spin" /> : <Link2 size={16} />}
+                        {enlaceTelegram ? "Generar otro enlace" : "Generar enlace"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="parents-empty">No se pudo consultar el estado de Telegram.</div>
+            )}
           </div>
         </div>
       )}

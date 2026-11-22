@@ -1,1 +1,69 @@
-/* Estilos de Vacunacion: no estaban incluidos en el index.css original. */
+/* =========================================
+   SCCVI - GESTION DE VACUNACION
+   Compatible con tema claro y oscuro
+========================================= */
+.vac-page{display:flex;flex-direction:column;gap:20px;color:var(--text);min-width:0}
+.vac-heading{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.vac-eyebrow{font-size:10px;font-weight:800;letter-spacing:1.4px;color:var(--accent);margin-bottom:7px}
+.vac-heading h2{font-family:Manrope,sans-serif;font-size:25px;font-weight:800;letter-spacing:-.6px}
+.vac-heading p,.vac-panel-title p{font-size:12px;color:var(--text-secondary);margin-top:5px}
+.vac-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--border);font-size:12px;font-weight:700;transition:.18s ease;white-space:nowrap}
+.vac-button:disabled{opacity:.55;cursor:not-allowed}
+.vac-button-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.vac-button-primary:hover:not(:disabled){background:var(--accent-hover);border-color:var(--accent-hover)}
+.vac-button-secondary{background:var(--surface);color:var(--text)}
+.vac-button-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.vac-message{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:11px;font-size:12px}
+.vac-message button{margin-left:auto;display:grid;place-items:center;border:0;background:transparent;color:inherit}
+.vac-message.exito{background:rgba(16,185,129,.09);color:#059669;border-color:rgba(16,185,129,.22)}
+.vac-message.error{background:rgba(239,68,68,.08);color:#dc2626;border-color:rgba(239,68,68,.2)}
+.vac-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.vac-stat-card{display:flex;align-items:center;gap:12px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);min-width:0}
+.vac-stat-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;flex-shrink:0}
+.vac-stat-icon.teal{background:rgba(20,184,166,.12);color:#0d9488}.vac-stat-icon.orange{background:rgba(245,158,11,.13);color:#d97706}.vac-stat-icon.red{background:rgba(239,68,68,.11);color:#dc2626}.vac-stat-icon.blue{background:rgba(59,130,246,.11);color:#2563eb}
+.vac-stat-card div{display:flex;flex-direction:column;gap:3px;min-width:0}.vac-stat-card small{font-size:11px;color:var(--text-secondary)}.vac-stat-card strong{font-family:Manrope,sans-serif;font-size:23px;line-height:1.2}
+.vac-tabs{display:flex;align-items:center;gap:6px;padding:5px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;width:max-content;max-width:100%;overflow-x:auto}
+.vac-tabs button{display:inline-flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--text-secondary);font-size:12px;font-weight:600;white-space:nowrap}
+.vac-tabs button.active{background:var(--surface);color:var(--accent);border-color:var(--border);box-shadow:var(--shadow)}
+.vac-tab-count{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;background:var(--accent-soft);color:var(--accent);border-radius:20px;font-size:10px}
+.vac-two-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.vac-panel{min-width:0;padding:19px;background:var(--surface);border:1px solid var(--border);border-radius:15px;box-shadow:var(--shadow)}
+.vac-panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px}
+.vac-panel-title h3{font-family:Manrope,sans-serif;font-size:15px;font-weight:800}
+.vac-title-icon{display:grid;place-items:center;width:39px;height:39px;border-radius:11px;background:var(--accent-soft);color:var(--accent);flex-shrink:0}
+.vac-form{display:flex;flex-direction:column;gap:13px}
+.vac-form label,.vac-catalog-form label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;color:var(--text-secondary);min-width:0}
+.vac-form input,.vac-form select,.vac-form textarea,.vac-catalog-form input,.vac-catalog-form textarea,.vac-search input{width:100%;min-width:0;min-height:40px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);outline:none;font-size:12px;transition:border-color .18s ease,box-shadow .18s ease}
+.vac-form textarea,.vac-catalog-form textarea{resize:vertical;min-height:74px}
+.vac-form input:focus,.vac-form select:focus,.vac-form textarea:focus,.vac-catalog-form input:focus,.vac-catalog-form textarea:focus,.vac-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.vac-form label small{font-size:10px;font-weight:500;color:var(--text-secondary)}
+.vac-form-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vac-help{font-size:10px;color:var(--text-secondary);line-height:1.5;margin-top:11px}
+.vac-empty{display:flex;align-items:center;justify-content:center;gap:9px;min-height:130px;padding:22px;text-align:center;color:var(--text-secondary);font-size:12px}
+.vac-history-list{display:flex;flex-direction:column;gap:11px;max-height:580px;overflow:auto;padding-right:3px}
+.vac-history-item{padding:13px;border:1px solid var(--border);border-radius:11px;background:var(--bg)}
+.vac-history-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.vac-history-top strong{font-size:12px}.vac-history-top span{font-size:10px;color:var(--text-secondary);white-space:nowrap}
+.vac-history-meta{display:flex;flex-wrap:wrap;gap:8px 13px;margin-top:9px;font-size:10px;color:var(--text-secondary)}
+.vac-history-item p{font-size:11px;color:var(--text-secondary);margin-top:9px;line-height:1.5}
+.vac-muted{font-size:10px;color:var(--text-secondary)}
+.vac-table-wrap{width:100%;overflow-x:auto}
+.vac-table{width:100%;border-collapse:collapse;min-width:700px}
+.vac-table th{padding:11px 12px;background:var(--bg-secondary);color:var(--text-secondary);font-size:10px;font-weight:700;text-align:left;white-space:nowrap}
+.vac-table td{padding:12px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle}
+.vac-table tr:last-child td{border-bottom:0}
+.vac-table td strong{display:block;font-size:11px;color:var(--text)}
+.vac-table td small{display:block;margin-top:4px;font-size:10px;color:var(--text-secondary)}
+.vac-status{display:inline-flex;align-items:center;justify-content:center;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.vac-status.upcoming{background:rgba(245,158,11,.12);color:#d97706}.vac-status.overdue{background:rgba(239,68,68,.11);color:#dc2626}.vac-status.active{background:rgba(16,185,129,.11);color:#059669}.vac-status.inactive{background:var(--bg-secondary);color:var(--text-secondary)}
+.vac-action-button{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-secondary);font-size:10px;font-weight:700;white-space:nowrap}
+.vac-action-button:hover{border-color:var(--accent);color:var(--accent)}
+.vac-table-empty{text-align:center;color:var(--text-secondary);padding:25px!important}
+.vac-search-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0}
+.vac-search{display:flex;align-items:center;gap:8px;width:min(100%,420px);padding-left:11px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text-secondary)}
+.vac-search input{border:0;background:transparent;box-shadow:none!important}
+.vac-catalog-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px;margin-bottom:15px;border:1px solid var(--border);border-radius:11px;background:var(--bg)}
+.vac-catalog-description{grid-column:span 2}
+.vac-catalog-form button{align-self:end}
+.vac-spin{animation:vac-spin 1s linear infinite}@keyframes vac-spin{to{transform:rotate(360deg)}}
+@media(max-width:1050px){.vac-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.vac-two-columns{grid-template-columns:1fr}}
+@media(max-width:650px){.vac-heading{align-items:flex-start;flex-direction:column}.vac-heading h2{font-size:21px}.vac-tabs{width:100%}.vac-tabs button{padding:9px 10px}.vac-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.vac-stat-card{padding:12px;gap:9px}.vac-stat-icon{width:36px;height:36px}.vac-stat-card strong{font-size:20px}.vac-panel{padding:14px}.vac-form-row{grid-template-columns:1fr}.vac-catalog-form{grid-template-columns:1fr}.vac-catalog-description{grid-column:auto}.vac-catalog-form button{min-height:40px}}

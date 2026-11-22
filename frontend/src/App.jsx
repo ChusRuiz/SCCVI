@@ -12,6 +12,7 @@ import Notificaciones from "./pages/Notificaciones";
 import CarnetPublico from "./pages/CarnetPublico";
 import Campanas from "./pages/Campanas";
 import Reportes from "./pages/Reportes";
+import Vacunacion from "./pages/Vacunacion";
 
 import MainLayout from "./components/layout/MainLayout";
 
@@ -108,6 +109,7 @@ reportes: {
     notificaciones: <Notificaciones />,
     campanas: <Campanas />,
     reportes: <Reportes />,
+    vacunacion: <Vacunacion />,
   };
 
   return (

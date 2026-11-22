@@ -1,0 +1,294 @@
+/* SCCVI - Ajustes de navegación y distribución de pantalla */
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+#root {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* La aplicación ocupa el viewport; solo se desplaza el contenido central. */
+.app-layout {
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+/* La barra lateral permanece visible y conserva su espacio en el layout. */
+.sidebar {
+  position: relative;
+  top: auto;
+  left: auto;
+  height: 100dvh;
+  min-height: 0;
+  flex: 0 0 250px;
+  width: 250px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sidebar-collapsed {
+  flex-basis: 78px;
+  width: 78px;
+}
+
+.sidebar-nav {
+  flex: 0 0 auto;
+}
+
+.sidebar-bottom {
+  flex: 0 0 auto;
+}
+
+.app-main {
+  height: 100dvh;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  flex: 0 0 auto;
+}
+
+.page-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Botón rojo para iniciar el flujo de cierre de sesión. */
+.user-logout-button {
+  width: auto;
+  min-width: 38px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fff1f2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.user-logout-button:hover {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+:root[data-theme="dark"] .user-logout-button {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(127, 29, 29, 0.22);
+  color: #fca5a5;
+}
+
+:root[data-theme="dark"] .user-logout-button:hover {
+  background: rgba(127, 29, 29, 0.4);
+  color: #fecaca;
+}
+
+/* Confirmación de cierre de sesión. */
+.logout-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(3px);
+}
+
+.logout-confirm-dialog {
+  position: relative;
+  width: min(100%, 420px);
+  padding: 30px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  text-align: center;
+  animation: logout-dialog-in 0.16s ease-out;
+}
+
+@keyframes logout-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.logout-confirm-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.logout-confirm-close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.logout-confirm-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border: 1px solid #fecaca;
+  border-radius: 15px;
+  background: #fff1f2;
+  color: #dc2626;
+}
+
+:root[data-theme="dark"] .logout-confirm-icon {
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(127, 29, 29, 0.22);
+  color: #fca5a5;
+}
+
+.logout-confirm-dialog h2 {
+  margin: 0;
+  color: var(--text);
+  font-family: "Manrope", sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.logout-confirm-dialog p {
+  margin: 10px 0 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.logout-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.logout-confirm-cancel,
+.logout-confirm-submit {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  transition: 0.18s ease;
+}
+
+.logout-confirm-cancel {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.logout-confirm-cancel:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.logout-confirm-submit {
+  border: 1px solid #dc2626;
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.logout-confirm-submit:hover {
+  border-color: #b91c1c;
+  background: #b91c1c;
+}
+
+/* Mantener la navegación compacta en pantallas pequeñas. */
+@media (max-width: 1000px) {
+  .sidebar {
+    flex-basis: 220px;
+    width: 220px;
+  }
+
+  .sidebar-collapsed {
+    flex-basis: 76px;
+    width: 76px;
+  }
+}
+
+@media (max-width: 700px) {
+  .sidebar {
+    flex-basis: 70px;
+    width: 70px;
+    height: 100dvh;
+  }
+
+  .sidebar-collapsed {
+    flex-basis: 70px;
+    width: 70px;
+  }
+
+  .user-logout-button {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+  }
+
+  .user-logout-button span {
+    display: none;
+  }
+
+  .logout-confirm-dialog {
+    padding: 26px 20px 22px;
+  }
+
+  .logout-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .logout-confirm-cancel,
+  .logout-confirm-submit {
+    width: 100%;
+  }
+}

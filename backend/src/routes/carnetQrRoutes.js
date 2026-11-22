@@ -9,14 +9,19 @@ const {
 } = require("../controllers/carnetQrController");
 
 const {
+  descargarPdfCarnet,
+  enviarCarnetPorCorreo,
+} = require("../controllers/carnetQrAccionesController");
+
+const {
   verificarToken,
   verificarRol,
 } = require("../middleware/authMiddleware");
 
-// Esta ruta es pública, pero exige el token QR y el PIN.
+// Ruta pública: requiere token QR y PIN.
 router.post("/acceso", accederCarnet);
 
-// Administración de carnets: solo personal autorizado.
+// Administración del carnet: personal autorizado.
 router.use(verificarToken);
 
 router.post(
@@ -29,6 +34,18 @@ router.get(
   "/paciente/:id",
   verificarRol("admin", "medico", "enfermero", "recepcion"),
   obtenerCarnetPaciente
+);
+
+router.post(
+  "/:id/pdf",
+  verificarRol("admin", "medico", "enfermero", "recepcion"),
+  descargarPdfCarnet
+);
+
+router.post(
+  "/:id/enviar-correo",
+  verificarRol("admin", "medico", "enfermero"),
+  enviarCarnetPorCorreo
 );
 
 router.patch(

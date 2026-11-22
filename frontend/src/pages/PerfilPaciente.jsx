@@ -20,11 +20,13 @@ import {
   ShieldCheck,
   Building2,
   UserCheck,
+  QrCode,
 } from "lucide-react";
 
 import api from "../services/api";
 import IndicadoresCrecimiento from "./IndicadoresCrecimiento";
 import GraficasCrecimiento from "./GraficasCrecimiento";
+import CarnetPacientePanel from "../components/CarnetPacientePanel";
 
 // ============================================
 // CONFIGURACION DE INDICADORES OMS
@@ -660,6 +662,13 @@ export default function PerfilPaciente({ id, onVolver }) {
           <Syringe size={15} />
           Vacunación
         </button>
+        <button
+  className={tab === "carnet" ? "active" : ""}
+  onClick={() => setTab("carnet")}
+>
+  <QrCode size={15} />
+  Carnet QR
+</button>
       </div>
 
       {/* ======================================
@@ -1031,9 +1040,10 @@ export default function PerfilPaciente({ id, onVolver }) {
 
                   <div className="profile-vaccine-info">
                     <strong>
-                      {vacuna.nombre_vacuna ||
-                        vacuna.nombre ||
-                        "Vacuna"}
+                      {vacuna.vacuna ||
+                        vacuna.nombre_vacuna ||
+                            vacuna.nombre ||
+                          "Vacuna"}
                     </strong>
 
                     <span>Dosis: {vacuna.dosis || "—"}</span>
@@ -1054,6 +1064,16 @@ export default function PerfilPaciente({ id, onVolver }) {
             </div>
           )}
         </div>
+      )}
+      {/* ======================================
+          CARNET DIGITAL QR
+      ====================================== */}
+
+      {tab === "carnet" && (
+        <CarnetPacientePanel
+          paciente={paciente}
+          padres={padres}
+        />
       )}
     </div>
   );
