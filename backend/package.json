@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "worker": "node src/worker.js",
     "dev:worker": "nodemon src/worker.js",
-    "check": "node --check src/server.js && node --check src/worker.js && node --check src/config/env.js && node --check src/config/db.js && node --check src/jobs/notificacionesJob.js && node --check src/services/telegramPollingService.js"
+    "check": "node --check src/server.js && node --check src/worker.js && node --check src/config/env.js && node --check src/config/db.js && node --check src/jobs/notificacionesJob.js && node --check src/services/telegramPollingService.js",
+    "openapi:check": "node src/scripts/validarOpenApi.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -21,6 +22,7 @@
     "pdfkit": "^0.21.0",
     "pg": "^8.23.1",
     "qrcode": "^1.5.4",
+    "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

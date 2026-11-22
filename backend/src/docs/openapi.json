@@ -1,0 +1,5509 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SCCVI - Sistema de Control de Crecimiento y Vacunación Infantil",
+    "version": "1.0.0",
+    "description": "API REST del sistema SCCVI. Documentación construida a partir de las rutas y controladores presentes en la rama feature/preparacion-produccion-aws. Los endpoints bajo /api requieren JWT, salvo los que se identifican como públicos. Los roles funcionales documentados son admin, personal_salud y encargado_centro. La política real de autorización se aplica en rolesMiddleware."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Entorno local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sistema",
+      "description": "Estado y comprobación de la API."
+    },
+    {
+      "name": "Autenticación",
+      "description": "Inicio de sesión y consulta de la sesión autenticada."
+    },
+    {
+      "name": "Usuarios",
+      "description": "Administración de cuentas y roles."
+    },
+    {
+      "name": "Pacientes",
+      "description": "Registro, consulta, actualización y desactivación de pacientes."
+    },
+    {
+      "name": "Crecimiento",
+      "description": "Controles de crecimiento, evaluaciones OMS e historial."
+    },
+    {
+      "name": "Vacunación",
+      "description": "Catálogo de vacunas, aplicaciones e historial."
+    },
+    {
+      "name": "Dashboard",
+      "description": "Indicadores generales del sistema."
+    },
+    {
+      "name": "Comunidades",
+      "description": "Administración de comunidades."
+    },
+    {
+      "name": "Padres y tutores",
+      "description": "Registro de padres, relaciones con pacientes y vinculación Telegram."
+    },
+    {
+      "name": "Alertas",
+      "description": "Consulta y gestión de alertas clínicas y operativas."
+    },
+    {
+      "name": "Notificaciones",
+      "description": "Consulta de la cola e historial de notificaciones."
+    },
+    {
+      "name": "Carnet QR",
+      "description": "Generación, acceso protegido y acciones del carnet digital."
+    },
+    {
+      "name": "Campañas",
+      "description": "Previsualización, programación y consulta de campañas."
+    },
+    {
+      "name": "Reportes",
+      "description": "Consultas agregadas y reportes del sistema."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Usa el token devuelto por POST /api/auth/login. Envía Authorization: Bearer <token>."
+      }
+    },
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador numérico positivo.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "IdPaciente": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador numérico del paciente.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "IdPadre": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador numérico del padre o tutor.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "IdCarnet": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador numérico del carnet.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "IdPacienteRelacion": {
+        "name": "idPaciente",
+        "in": "path",
+        "required": true,
+        "description": "Identificador numérico del paciente relacionado.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "mensaje": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "SimpleMessage": {
+        "type": "object",
+        "properties": {
+          "mensaje": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "correo",
+          "password"
+        ],
+        "properties": {
+          "correo": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "id_usuario": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "correo": {
+            "type": "string",
+            "format": "email"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "personal_salud",
+              "encargado_centro"
+            ]
+          },
+          "rol_label": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "mensaje": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string",
+            "description": "JWT de sesión."
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/Usuario"
+          }
+        }
+      },
+      "UsuarioRequest": {
+        "type": "object",
+        "required": [
+          "nombre",
+          "correo",
+          "rol",
+          "password"
+        ],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "correo": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "personal_salud",
+              "encargado_centro"
+            ]
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "format": "password"
+          }
+        }
+      },
+      "UsuarioUpdateRequest": {
+        "type": "object",
+        "required": [
+          "nombre",
+          "correo",
+          "rol"
+        ],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "correo": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "personal_salud",
+              "encargado_centro"
+            ]
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "format": "password",
+            "description": "Opcional; si se omite se conserva la contraseña actual."
+          }
+        }
+      },
+      "EstadoUsuarioRequest": {
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "properties": {
+          "estado": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AsociacionPadrePaciente": {
+        "type": "object",
+        "required": [
+          "id_padre"
+        ],
+        "properties": {
+          "id_padre": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "parentesco": {
+            "type": "string",
+            "maxLength": 40,
+            "default": "Encargado"
+          },
+          "es_contacto_principal": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "PacienteRequest": {
+        "type": "object",
+        "required": [
+          "nombres",
+          "apellidos",
+          "fecha_nacimiento",
+          "sexo"
+        ],
+        "properties": {
+          "nombres": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "apellidos": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "fecha_nacimiento": {
+            "type": "string",
+            "format": "date"
+          },
+          "sexo": {
+            "type": "string",
+            "enum": [
+              "masculino",
+              "femenino"
+            ]
+          },
+          "cui": {
+            "type": "string",
+            "pattern": "^\\d{13}$"
+          },
+          "direccion": {
+            "type": "string",
+            "nullable": true
+          },
+          "id_comunidad": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          },
+          "nombre_encargado": {
+            "type": "string",
+            "description": "Se requiere un padre en 'padres' o un nombre de encargado."
+          },
+          "telefono_encargado": {
+            "type": "string",
+            "nullable": true
+          },
+          "padres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AsociacionPadrePaciente"
+            },
+            "description": "Asociaciones existentes de padres; solo se permite un contacto principal."
+          }
+        },
+        "description": "Para crear un paciente debe asociarse al menos un padre o proporcionar nombre_encargado. En actualización, padres es opcional."
+      },
+      "ComunidadRequest": {
+        "type": "object",
+        "required": [
+          "nombre",
+          "ubicacion"
+        ],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "ubicacion": {
+            "type": "string"
+          },
+          "familias_estimadas": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          }
+        }
+      },
+      "PadreRequest": {
+        "type": "object",
+        "required": [
+          "nombres",
+          "apellidos",
+          "id_comunidad"
+        ],
+        "properties": {
+          "nombres": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "apellidos": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "id_comunidad": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "dpi": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opcional. Puede contener espacios o guiones; el controlador normaliza el valor y exige 13 dígitos."
+          },
+          "telefono": {
+            "type": "string",
+            "nullable": true
+          },
+          "correo": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "canal_preferido": {
+            "type": "string",
+            "enum": [
+              "email",
+              "telegram",
+              "whatsapp"
+            ],
+            "default": "email"
+          },
+          "pacientes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AsociacionPacientePadre"
+            }
+          }
+        }
+      },
+      "AsociacionPacientePadre": {
+        "type": "object",
+        "required": [
+          "id_paciente"
+        ],
+        "properties": {
+          "id_paciente": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "parentesco": {
+            "type": "string",
+            "maxLength": 40,
+            "default": "Encargado"
+          },
+          "es_contacto_principal": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "CrecimientoRequest": {
+        "type": "object",
+        "required": [
+          "id_paciente",
+          "peso_kg",
+          "talla_cm",
+          "metodo_medicion_talla"
+        ],
+        "properties": {
+          "id_paciente": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fecha_control": {
+            "type": "string",
+            "format": "date",
+            "description": "Opcional; si se omite se utiliza la fecha local actual."
+          },
+          "peso_kg": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "talla_cm": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "metodo_medicion_talla": {
+            "type": "string",
+            "enum": [
+              "acostado",
+              "de_pie"
+            ]
+          },
+          "perimetro_cefalico_cm": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "observaciones": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "description": "Las referencias OMS utilizadas cubren edades desde el nacimiento hasta 60 meses."
+      },
+      "VacunaRequest": {
+        "type": "object",
+        "required": [
+          "nombre",
+          "numero_dosis"
+        ],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "edad_recomendada": {
+            "type": "string",
+            "nullable": true
+          },
+          "numero_dosis": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "VacunacionRequest": {
+        "type": "object",
+        "required": [
+          "id_paciente",
+          "id_vacuna",
+          "dosis",
+          "fecha_aplicacion"
+        ],
+        "properties": {
+          "id_paciente": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "id_vacuna": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "dosis": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fecha_aplicacion": {
+            "type": "string",
+            "format": "date"
+          },
+          "proxima_dosis": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "lote": {
+            "type": "string",
+            "nullable": true
+          },
+          "observaciones": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CampanaRequest": {
+        "type": "object",
+        "required": [
+          "titulo",
+          "tipo",
+          "mensaje"
+        ],
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "jornada_vacunacion",
+              "control_medico",
+              "informativa"
+            ]
+          },
+          "mensaje": {
+            "type": "string",
+            "maxLength": 3000
+          },
+          "descripcion": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "id_comunidad": {
+            "type": "integer",
+            "minimum": 1,
+            "nullable": true
+          },
+          "edad_min_meses": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "edad_max_meses": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "filtro_vacunacion": {
+            "type": "string",
+            "enum": [
+              "todos",
+              "completa",
+              "pendiente"
+            ],
+            "default": "todos"
+          },
+          "fecha_programada": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Opcional; si se omite se utiliza la fecha y hora actual."
+          }
+        }
+      },
+      "CarnetGenerarRequest": {
+        "type": "object",
+        "required": [
+          "pin"
+        ],
+        "properties": {
+          "pin": {
+            "type": "string",
+            "pattern": "^\\d{6,12}$",
+            "format": "password",
+            "description": "PIN numérico de 6 a 12 dígitos. Nunca se devuelve en la respuesta."
+          }
+        }
+      },
+      "CarnetAccesoRequest": {
+        "type": "object",
+        "required": [
+          "token",
+          "pin"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+          },
+          "pin": {
+            "type": "string",
+            "pattern": "^\\d{6,12}$",
+            "format": "password"
+          }
+        },
+        "description": "Autenticación pública del carnet mediante token QR y PIN."
+      },
+      "CarnetPdfRequest": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+          }
+        }
+      },
+      "CarnetEmailRequest": {
+        "type": "object",
+        "required": [
+          "token",
+          "id_padre"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+          },
+          "id_padre": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "Alerta": {
+        "type": "object",
+        "properties": {
+          "id_alerta": {
+            "type": "integer"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "pendiente",
+              "revisada",
+              "resuelta",
+              "descartada"
+            ]
+          },
+          "prioridad": {
+            "type": "string",
+            "enum": [
+              "preventiva",
+              "critica"
+            ]
+          },
+          "tipo_alerta": {
+            "type": "string",
+            "enum": [
+              "crecimiento_bajo",
+              "crecimiento_alto",
+              "control_atrasado",
+              "vacuna_pendiente",
+              "vacuna_atrasada"
+            ]
+          }
+        },
+        "additionalProperties": true
+      },
+      "GenericResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "mensaje": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "total": {
+            "type": "integer"
+          },
+          "paginacion": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "ArrayResponse": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Solicitud inválida o parámetros no válidos.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Token ausente, inválido o expirado.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "El rol autenticado no tiene permiso para la operación.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso no encontrado.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflicto con el estado actual o con un registro existente.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Error interno del servidor.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "obtenerRaiz",
+        "summary": "Comprobar API",
+        "description": "Devuelve un mensaje de estado general de SCCVI.",
+        "tags": [
+          "Sistema"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "healthLive",
+        "summary": "Comprobar disponibilidad del proceso",
+        "description": "Liveness probe: confirma que el proceso HTTP está activo; no consulta PostgreSQL.",
+        "tags": [
+          "Sistema"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "summary": "Comprobar disponibilidad de la base de datos",
+        "description": "Readiness probe: ejecuta SELECT 1 contra PostgreSQL. Responde 503 cuando la base no está disponible.",
+        "tags": [
+          "Sistema"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "apiHealth",
+        "summary": "Consultar estado de PostgreSQL",
+        "description": "Endpoint de compatibilidad que devuelve la fecha de la base de datos.",
+        "tags": [
+          "Sistema"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/protegido": {
+      "get": {
+        "operationId": "probarAutenticacion",
+        "summary": "Probar acceso autenticado",
+        "description": "Ruta de prueba que devuelve información del usuario autenticado.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Sistema"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Iniciar sesión",
+        "description": "Valida correo y contraseña y devuelve un JWT junto con el perfil funcional.",
+        "tags": [
+          "Autenticación"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "obtenerPerfil",
+        "summary": "Obtener perfil de la sesión",
+        "description": "Devuelve el usuario, el identificador y el rol actual consultado desde PostgreSQL.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Autenticación"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ]
+      }
+    },
+    "/api/usuarios": {
+      "get": {
+        "operationId": "listarUsuarios",
+        "summary": "Listar usuarios",
+        "description": "Listar usuarios\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Usuarios"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "crearUsuario",
+        "summary": "Crear usuario",
+        "description": "Crear usuario\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Usuarios"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/{id}": {
+      "put": {
+        "operationId": "actualizarUsuario",
+        "summary": "Actualizar usuario",
+        "description": "Actualizar usuario\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Usuarios"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioUpdateRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/usuarios/{id}/estado": {
+      "patch": {
+        "operationId": "cambiarEstadoUsuario",
+        "summary": "Activar o desactivar usuario",
+        "description": "No permite desactivar la propia cuenta ni retirar los privilegios al último administrador activo.\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Usuarios"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstadoUsuarioRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/pacientes": {
+      "get": {
+        "operationId": "listarPacientes",
+        "summary": "Listar y buscar pacientes",
+        "description": "Listar y buscar pacientes\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Pacientes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "buscar",
+            "in": "query",
+            "required": false,
+            "description": "Busca por nombres, apellidos o CUI.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Estado de pacientes a consultar.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activo",
+                "inactivo",
+                "todas"
+              ],
+              "default": "activo"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "crearPaciente",
+        "summary": "Registrar paciente",
+        "description": "Registrar paciente\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Pacientes"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PacienteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pacientes/{id}": {
+      "get": {
+        "operationId": "obtenerPaciente",
+        "summary": "Consultar paciente",
+        "description": "Consultar paciente\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Pacientes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "actualizarPaciente",
+        "summary": "Actualizar paciente",
+        "description": "Actualizar paciente\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Pacientes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PacienteRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/pacientes/{id}/desactivar": {
+      "patch": {
+        "operationId": "desactivarPaciente",
+        "summary": "Desactivar paciente",
+        "description": "Desactivar paciente\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Pacientes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/crecimiento": {
+      "post": {
+        "operationId": "registrarControlCrecimiento",
+        "summary": "Registrar control y evaluación OMS",
+        "description": "Registra medidas antropométricas, calcula edad y evaluaciones OMS. Las referencias configuradas abarcan de 0 a 60 meses.\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Crecimiento"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrecimientoRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crecimiento/paciente/{id}/curvas-oms": {
+      "get": {
+        "operationId": "obtenerCurvasOMS",
+        "summary": "Consultar curvas OMS de un paciente",
+        "description": "Consultar curvas OMS de un paciente\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Crecimiento"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del paciente.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/crecimiento/paciente/{id}": {
+      "get": {
+        "operationId": "obtenerHistorialCrecimiento",
+        "summary": "Consultar historial de crecimiento",
+        "description": "Consultar historial de crecimiento\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Crecimiento"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del paciente.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/crecimiento/{id}": {
+      "get": {
+        "operationId": "obtenerControlCrecimiento",
+        "summary": "Consultar un control de crecimiento",
+        "description": "Consultar un control de crecimiento\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Crecimiento"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "eliminarControlCrecimiento",
+        "summary": "Eliminar control de crecimiento",
+        "description": "Eliminar control de crecimiento\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Crecimiento"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/vacunacion/vacunas": {
+      "get": {
+        "operationId": "obtenerVacunas",
+        "summary": "Consultar catálogo de vacunas",
+        "description": "Consultar catálogo de vacunas\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Vacunación"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ]
+      },
+      "post": {
+        "operationId": "crearVacuna",
+        "summary": "Registrar vacuna en el catálogo",
+        "description": "Registrar vacuna en el catálogo\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Vacunación"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacunaRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vacunacion/vacunas/{id}/desactivar": {
+      "patch": {
+        "operationId": "desactivarVacuna",
+        "summary": "Desactivar vacuna del catálogo",
+        "description": "Desactivar vacuna del catálogo\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Vacunación"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/vacunacion/vacunas/{id}/activar": {
+      "patch": {
+        "operationId": "activarVacuna",
+        "summary": "Reactivar vacuna del catálogo",
+        "description": "Reactivar vacuna del catálogo\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Vacunación"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/vacunacion": {
+      "post": {
+        "operationId": "registrarVacunacion",
+        "summary": "Registrar aplicación de vacuna",
+        "description": "Registrar aplicación de vacuna\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Vacunación"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacunacionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vacunacion/paciente/{id}": {
+      "get": {
+        "operationId": "historialVacunacion",
+        "summary": "Consultar historial de vacunación",
+        "description": "Consultar historial de vacunación\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Vacunación"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del paciente.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/vacunacion/proximas-dosis": {
+      "get": {
+        "operationId": "proximasDosis",
+        "summary": "Consultar próximas y atrasadas dosis",
+        "description": "Consultar próximas y atrasadas dosis\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Vacunación"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ]
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "operationId": "obtenerDashboard",
+        "summary": "Consultar indicadores del dashboard",
+        "description": "Consultar indicadores del dashboard\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Dashboard"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ]
+      }
+    },
+    "/api/comunidades": {
+      "get": {
+        "operationId": "listarComunidades",
+        "summary": "Listar y buscar comunidades",
+        "description": "Listar y buscar comunidades\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Comunidades"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "buscar",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por nombre o ubicación.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Estado a consultar.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todas",
+                "activa",
+                "inactiva"
+              ],
+              "default": "todas"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "crearComunidad",
+        "summary": "Registrar comunidad",
+        "description": "Registrar comunidad\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Comunidades"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComunidadRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comunidades/{id}": {
+      "get": {
+        "operationId": "obtenerComunidad",
+        "summary": "Consultar comunidad",
+        "description": "Consultar comunidad\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Comunidades"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "actualizarComunidad",
+        "summary": "Actualizar comunidad",
+        "description": "Actualizar comunidad\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Comunidades"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComunidadRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/comunidades/{id}/desactivar": {
+      "patch": {
+        "operationId": "desactivarComunidad",
+        "summary": "Desactivar comunidad",
+        "description": "Desactivar comunidad\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Comunidades"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/comunidades/{id}/activar": {
+      "patch": {
+        "operationId": "activarComunidad",
+        "summary": "Reactivar comunidad",
+        "description": "Reactivar comunidad\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Comunidades"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres": {
+      "get": {
+        "operationId": "listarPadres",
+        "summary": "Listar padres y tutores",
+        "description": "Listar padres y tutores\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "buscar",
+            "in": "query",
+            "required": false,
+            "description": "Busca por nombre o DPI.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por estado.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todas",
+                "activo",
+                "inactivo"
+              ],
+              "default": "todas"
+            }
+          },
+          {
+            "name": "comunidad",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por identificador de comunidad.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      },
+      "post": {
+        "operationId": "crearPadre",
+        "summary": "Registrar padre o tutor",
+        "description": "Registrar padre o tutor\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PadreRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/padres/{id}": {
+      "get": {
+        "operationId": "obtenerPadre",
+        "summary": "Consultar padre y pacientes asociados",
+        "description": "Consultar padre y pacientes asociados\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "put": {
+        "operationId": "actualizarPadre",
+        "summary": "Actualizar padre o tutor",
+        "description": "Actualizar padre o tutor\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PadreRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres/{id}/desactivar": {
+      "patch": {
+        "operationId": "desactivarPadre",
+        "summary": "Desactivar padre o tutor",
+        "description": "Desactivar padre o tutor\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres/{id}/activar": {
+      "patch": {
+        "operationId": "activarPadre",
+        "summary": "Reactivar padre o tutor",
+        "description": "Reactivar padre o tutor\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres/{id}/pacientes": {
+      "post": {
+        "operationId": "asociarPacientePadre",
+        "summary": "Asociar paciente a padre",
+        "description": "Asociar paciente a padre\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsociacionPacientePadre"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres/{id}/pacientes/{idPaciente}": {
+      "delete": {
+        "operationId": "desasociarPacientePadre",
+        "summary": "Quitar asociación padre-paciente",
+        "description": "Quitar asociación padre-paciente\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "idPaciente",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del paciente asociado.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres/{id}/pacientes/{idPaciente}/contacto-principal": {
+      "patch": {
+        "operationId": "marcarContactoPrincipal",
+        "summary": "Marcar contacto principal del paciente",
+        "description": "Marcar contacto principal del paciente\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "idPaciente",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del paciente asociado.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres/{id}/telegram/estado": {
+      "get": {
+        "operationId": "obtenerEstadoTelegram",
+        "summary": "Consultar estado de vinculación Telegram",
+        "description": "Consultar estado de vinculación Telegram\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/padres/{id}/telegram/vincular": {
+      "post": {
+        "operationId": "crearEnlaceTelegram",
+        "summary": "Generar enlace de vinculación Telegram",
+        "description": "Genera un enlace temporal de un solo uso para vincular la cuenta del padre o tutor con SCCVI. El enlace tiene vigencia limitada y existe un período de espera entre solicitudes.\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "desvincularTelegram",
+        "summary": "Desvincular cuenta Telegram",
+        "description": "Desvincular cuenta Telegram\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Padres y tutores"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/alertas": {
+      "get": {
+        "operationId": "listarAlertas",
+        "summary": "Listar alertas con filtros y paginación",
+        "description": "Listar alertas con filtros y paginación\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Alertas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "description": "Número de página.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "description": "Cantidad de registros por página.",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Estado de alerta.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pendiente",
+                "revisada",
+                "resuelta",
+                "descartada",
+                "todas"
+              ]
+            }
+          },
+          {
+            "name": "prioridad",
+            "in": "query",
+            "required": false,
+            "description": "Prioridad de alerta.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "preventiva",
+                "critica",
+                "todas"
+              ]
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "description": "Tipo de alerta.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "crecimiento_bajo",
+                "crecimiento_alto",
+                "control_atrasado",
+                "vacuna_pendiente",
+                "vacuna_atrasada",
+                "todos"
+              ]
+            }
+          },
+          {
+            "name": "id_paciente",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por paciente.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "id_comunidad",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por comunidad.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "buscar",
+            "in": "query",
+            "required": false,
+            "description": "Busca por título, descripción o nombre del paciente.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/alertas/generar": {
+      "post": {
+        "operationId": "generarAlertasManual",
+        "summary": "Ejecutar generación manual de alertas",
+        "description": "Ejecuta manualmente el generador de alertas. La operación también se programa automáticamente desde el worker.\n\nRoles autorizados por la política global: **admin**.",
+        "tags": [
+          "Alertas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin"
+        ]
+      }
+    },
+    "/api/alertas/estadisticas": {
+      "get": {
+        "operationId": "obtenerEstadisticasAlertas",
+        "summary": "Consultar estadísticas de alertas",
+        "description": "Consultar estadísticas de alertas\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Alertas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Estado de alerta.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pendiente",
+                "revisada",
+                "resuelta",
+                "descartada",
+                "todas"
+              ]
+            }
+          },
+          {
+            "name": "prioridad",
+            "in": "query",
+            "required": false,
+            "description": "Prioridad de alerta.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "preventiva",
+                "critica",
+                "todas"
+              ]
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "description": "Tipo de alerta.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "crecimiento_bajo",
+                "crecimiento_alto",
+                "control_atrasado",
+                "vacuna_pendiente",
+                "vacuna_atrasada",
+                "todos"
+              ]
+            }
+          },
+          {
+            "name": "id_paciente",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por paciente.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "id_comunidad",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por comunidad.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "buscar",
+            "in": "query",
+            "required": false,
+            "description": "Busca por título, descripción o nombre del paciente.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/alertas/{id}": {
+      "get": {
+        "operationId": "obtenerAlerta",
+        "summary": "Consultar una alerta",
+        "description": "Consultar una alerta\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Alertas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/alertas/{id}/revisar": {
+      "patch": {
+        "operationId": "revisarAlerta",
+        "summary": "Marcar alerta como revisada",
+        "description": "Marcar alerta como revisada\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Alertas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/alertas/{id}/resolver": {
+      "patch": {
+        "operationId": "resolverAlerta",
+        "summary": "Marcar alerta como resuelta",
+        "description": "Marcar alerta como resuelta\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Alertas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/alertas/{id}/descartar": {
+      "patch": {
+        "operationId": "descartarAlerta",
+        "summary": "Descartar alerta",
+        "description": "Descartar alerta\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Alertas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/notificaciones": {
+      "get": {
+        "operationId": "listarNotificaciones",
+        "summary": "Listar notificaciones",
+        "description": "Listar notificaciones\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Notificaciones"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "description": "Número de página.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "description": "Registros por página (máximo 100).",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por estado.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pendiente",
+                "procesando",
+                "enviada",
+                "error"
+              ]
+            }
+          },
+          {
+            "name": "canal",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por canal.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "email",
+                "telegram"
+              ]
+            }
+          },
+          {
+            "name": "busqueda",
+            "in": "query",
+            "required": false,
+            "description": "Texto de búsqueda.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/notificaciones/estadisticas": {
+      "get": {
+        "operationId": "obtenerEstadisticasNotificaciones",
+        "summary": "Consultar estadísticas de notificaciones",
+        "description": "Consultar estadísticas de notificaciones\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Notificaciones"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ]
+      }
+    },
+    "/api/notificaciones/{id}": {
+      "get": {
+        "operationId": "obtenerNotificacion",
+        "summary": "Consultar una notificación",
+        "description": "Consultar una notificación\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Notificaciones"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/carnets/acceso": {
+      "post": {
+        "operationId": "accederCarnet",
+        "summary": "Validar acceso público al carnet QR",
+        "description": "Valida el token QR y el PIN. El endpoint aplica bloqueo temporal después de intentos fallidos; no se requiere JWT. El controlador limita a cinco intentos fallidos y establece un bloqueo de 15 minutos.",
+        "tags": [
+          "Carnet QR"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarnetAccesoRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/carnets/paciente/{id}/generar": {
+      "post": {
+        "operationId": "generarCarnet",
+        "summary": "Generar o renovar carnet QR",
+        "description": "Genera el token QR y almacena hashes del token y PIN. El PIN se entrega separadamente y nunca se incluye en la respuesta.\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Carnet QR"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarnetGenerarRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del paciente.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/carnets/paciente/{id}": {
+      "get": {
+        "operationId": "obtenerCarnetPaciente",
+        "summary": "Consultar carnet de un paciente",
+        "description": "Consultar carnet de un paciente\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Carnet QR"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del paciente.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/carnets/{id}/pdf": {
+      "post": {
+        "operationId": "descargarPdfCarnet",
+        "summary": "Generar PDF del carnet",
+        "description": "Devuelve un archivo application/pdf; el cuerpo JSON debe contener el token QR actual.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Carnet QR"
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo PDF generado para descargar o imprimir el carnet.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarnetPdfRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del carnet.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/carnets/{id}/enviar-correo": {
+      "post": {
+        "operationId": "enviarCarnetPorCorreo",
+        "summary": "Enviar carnet por correo al padre asociado",
+        "description": "El backend determina el correo del padre asociado; el PIN no se adjunta ni se incluye en el mensaje.\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Carnet QR"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarnetEmailRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del carnet.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/carnets/{id}/revocar": {
+      "patch": {
+        "operationId": "revocarCarnet",
+        "summary": "Revocar carnet QR",
+        "description": "Revocar carnet QR\n\nRoles autorizados por la política global: **admin, personal_salud**.",
+        "tags": [
+          "Carnet QR"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador del carnet.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/campanas/previsualizar": {
+      "post": {
+        "operationId": "previsualizarCampana",
+        "summary": "Previsualizar segmento de campaña",
+        "description": "Calcula los destinatarios que cumplen comunidad, rango de edad y filtro operativo de vacunación; no programa la campaña.\n\nRoles autorizados por la política global: **admin, encargado_centro**.",
+        "tags": [
+          "Campañas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "encargado_centro"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampanaRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campanas": {
+      "post": {
+        "operationId": "crearCampana",
+        "summary": "Crear y programar campaña",
+        "description": "Crea la campaña y agrega las notificaciones de los destinatarios del segmento a la cola.\n\nRoles autorizados por la política global: **admin, encargado_centro**.",
+        "tags": [
+          "Campañas"
+        ],
+        "responses": {
+          "201": {
+            "description": "Registro creado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "encargado_centro"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos requeridos por la operación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampanaRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listarCampanas",
+        "summary": "Listar campañas",
+        "description": "Listar campañas\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Campañas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "description": "Número de página.",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "description": "Registros por página (máximo 100).",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/campanas/{id}": {
+      "get": {
+        "operationId": "obtenerCampana",
+        "summary": "Consultar campaña y destinatarios",
+        "description": "Consultar campaña y destinatarios\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Campañas"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador numérico positivo.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/reportes/resumen": {
+      "get": {
+        "operationId": "obtenerResumenReportes",
+        "summary": "Consultar resumen de reportes",
+        "description": "Los parámetros fecha_inicio y fecha_fin son opcionales y usan el formato YYYY-MM-DD cuando la consulta los aplica.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Reportes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "fecha_inicio",
+            "in": "query",
+            "required": false,
+            "description": "Fecha inicial opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fecha_fin",
+            "in": "query",
+            "required": false,
+            "description": "Fecha final opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    },
+    "/api/reportes/bajo-peso": {
+      "get": {
+        "operationId": "obtenerBajoPeso",
+        "summary": "Consultar reporte de bajo peso",
+        "description": "Los parámetros fecha_inicio y fecha_fin son opcionales y usan el formato YYYY-MM-DD cuando la consulta los aplica.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Reportes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "fecha_inicio",
+            "in": "query",
+            "required": false,
+            "description": "Fecha inicial opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fecha_fin",
+            "in": "query",
+            "required": false,
+            "description": "Fecha final opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    },
+    "/api/reportes/sobrepeso": {
+      "get": {
+        "operationId": "obtenerSobrepeso",
+        "summary": "Consultar reporte de sobrepeso",
+        "description": "Los parámetros fecha_inicio y fecha_fin son opcionales y usan el formato YYYY-MM-DD cuando la consulta los aplica.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Reportes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "fecha_inicio",
+            "in": "query",
+            "required": false,
+            "description": "Fecha inicial opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fecha_fin",
+            "in": "query",
+            "required": false,
+            "description": "Fecha final opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    },
+    "/api/reportes/vacunas-incompletas": {
+      "get": {
+        "operationId": "obtenerVacunasIncompletas",
+        "summary": "Consultar reporte de vacunas incompletas",
+        "description": "Los parámetros fecha_inicio y fecha_fin son opcionales y usan el formato YYYY-MM-DD cuando la consulta los aplica.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Reportes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "fecha_inicio",
+            "in": "query",
+            "required": false,
+            "description": "Fecha inicial opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fecha_fin",
+            "in": "query",
+            "required": false,
+            "description": "Fecha final opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    },
+    "/api/reportes/cobertura-comunidad": {
+      "get": {
+        "operationId": "obtenerCoberturaComunidad",
+        "summary": "Consultar cobertura por comunidad",
+        "description": "Los parámetros fecha_inicio y fecha_fin son opcionales y usan el formato YYYY-MM-DD cuando la consulta los aplica.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Reportes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "fecha_inicio",
+            "in": "query",
+            "required": false,
+            "description": "Fecha inicial opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fecha_fin",
+            "in": "query",
+            "required": false,
+            "description": "Fecha final opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    },
+    "/api/reportes/crecimiento-promedio-comunidad": {
+      "get": {
+        "operationId": "obtenerCrecimientoPromedioComunidad",
+        "summary": "Consultar crecimiento promedio por comunidad",
+        "description": "Los parámetros fecha_inicio y fecha_fin son opcionales y usan el formato YYYY-MM-DD cuando la consulta los aplica.\n\nRoles autorizados por la política global: **admin, personal_salud, encargado_centro**.",
+        "tags": [
+          "Reportes"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-required-roles": [
+          "admin",
+          "personal_salud",
+          "encargado_centro"
+        ],
+        "parameters": [
+          {
+            "name": "fecha_inicio",
+            "in": "query",
+            "required": false,
+            "description": "Fecha inicial opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fecha_fin",
+            "in": "query",
+            "required": false,
+            "description": "Fecha final opcional para reportes por período.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

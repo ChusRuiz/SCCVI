@@ -1,4 +1,4 @@
-const { validarConfiguracionBase } = require("./config/env");
+﻿const { validarConfiguracionBase } = require("./config/env");
 const { puerto: PORT, entorno } = validarConfiguracionBase();
 
 const express = require("express");
@@ -18,9 +18,16 @@ const carnetQrRoutes = require("./routes/carnetQrRoutes");
 const campanasRoutes = require("./routes/campanasRoutes");
 const reportesRoutes = require("./routes/reportesRoutes");
 const { protegerApi } = require("./middleware/rolesMiddleware");
+const montarSwagger = require("./docs/swagger");
 const usuariosRoutes = require("./routes/usuariosRoutes");
 
 const app = express();
+const swaggerHabilitado = process.env.SWAGGER_ENABLED === "true" ||
+  (entorno !== "production" && process.env.SWAGGER_ENABLED !== "false");
+montarSwagger(app, {
+  enabled: swaggerHabilitado,
+  serverUrl: process.env.SWAGGER_SERVER_URL || `http://localhost:${PORT}`,
+});
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
@@ -143,3 +150,4 @@ process.once("SIGTERM", () => cerrarServidor("SIGTERM"));
 process.once("SIGINT", () => cerrarServidor("SIGINT"));
 
 module.exports = app;
+
