@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sun, Moon, LogOut, AlertTriangle, X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { obtenerEtiquetaRol } from "../../utils/rolesSccvi";
 
 export default function Topbar({ title, subtitle, usuario, onLogout }) {
   const { theme, toggleTheme } = useTheme();
@@ -22,6 +23,9 @@ export default function Topbar({ title, subtitle, usuario, onLogout }) {
     onLogout?.();
   };
 
+  const nombreUsuario = usuario?.nombre || "Usuario";
+  const inicial = nombreUsuario.trim().charAt(0).toUpperCase() || "U";
+
   return (
     <>
       <header className="topbar">
@@ -42,13 +46,13 @@ export default function Topbar({ title, subtitle, usuario, onLogout }) {
           </button>
 
           <div className="topbar-user">
-            <div className="user-avatar">
-              {usuario?.nombre?.charAt(0)?.toUpperCase() || "U"}
+            <div className="user-avatar" aria-hidden="true">
+              {inicial}
             </div>
 
             <div className="user-info">
-              <strong>{usuario?.nombre || "Usuario"}</strong>
-              <span>{usuario?.rol || "Personal médico"}</span>
+              <strong>{nombreUsuario}</strong>
+              <span>{obtenerEtiquetaRol(usuario?.rol)}</span>
             </div>
 
             <button

@@ -13,13 +13,18 @@ export default function MainLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
+  const toggleSidebar = () => {
+    setCollapsed((actual) => !actual);
+  };
+
   return (
     <div className="app-layout">
       <Sidebar
+        usuario={usuario}
         activePage={activePage}
         onNavigate={onNavigate}
         collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed(!collapsed)}
+        onToggleCollapse={toggleSidebar}
       />
 
       <div className={`app-main ${collapsed ? "main-expanded" : ""}`}>
@@ -30,7 +35,9 @@ export default function MainLayout({
           onLogout={onLogout}
         />
 
-        <main className="page-content">{children}</main>
+        <main className="page-content" key={activePage}>
+          {children}
+        </main>
       </div>
     </div>
   );

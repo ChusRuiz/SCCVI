@@ -16,6 +16,8 @@ const carnetQrRoutes = require("./routes/carnetQrRoutes");
 const campanasRoutes = require("./routes/campanasRoutes");
 const reportesRoutes = require("./routes/reportesRoutes");
 const { iniciarTelegramPolling } = require("./services/telegramPollingService");
+const { protegerApi } = require("./middleware/rolesMiddleware");
+const usuariosRoutes = require("./routes/usuariosRoutes");
 
 require("dotenv").config();
 
@@ -33,6 +35,8 @@ app.get("/", (req, res) => {
 });
 
 // Autenticación
+app.use("/api", protegerApi);
+app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/pacientes", pacienteRoutes);
 app.use("/api/crecimiento", crecimientoRoutes);
@@ -45,7 +49,8 @@ app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/carnets", carnetQrRoutes);
 app.use("/api/campanas", campanasRoutes);
 app.use("/api/reportes", reportesRoutes);
-app.use("/api/carnets", carnetQrRoutes);
+
+
 
 
 // Verificar conexión a PostgreSQL

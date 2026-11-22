@@ -12,7 +12,7 @@ const {
 } = require("../controllers/reportesController");
 
 router.use(verificarToken);
-router.use(verificarRol("admin", "medico", "enfermero"));
+router.use(verificarRol("admin", "personal_salud", "encargado_centro"));
 
 router.get("/resumen", obtenerResumenReportes);
 router.get("/bajo-peso", obtenerBajoPeso);

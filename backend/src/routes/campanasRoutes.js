@@ -8,25 +8,23 @@ const {
   obtenerCampana,
 } = require("../controllers/campanasController");
 
-const {
-  verificarToken,
-  verificarRol,
-} = require("../middleware/authMiddleware");
+const { verificarToken, verificarRol } = require("../middleware/authMiddleware");
 
 router.use(verificarToken);
 
-// Personal de salud y administración pueden preparar campañas.
+// El encargado del centro supervisa y programa campañas.
 router.post(
   "/previsualizar",
-  verificarRol("admin", "medico", "enfermero"),
+  verificarRol("admin", "encargado_centro"),
   previsualizarCampana
 );
 router.post(
   "/",
-  verificarRol("admin", "medico", "enfermero"),
+  verificarRol("admin", "encargado_centro"),
   crearCampana
 );
 
+// Los tres roles pueden consultar campañas.
 router.get("/", listarCampanas);
 router.get("/:id", obtenerCampana);
 

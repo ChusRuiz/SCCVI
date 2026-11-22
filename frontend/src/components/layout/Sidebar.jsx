@@ -11,7 +11,9 @@ import {
   BellRing,
   Megaphone,
   FileBarChart,
+  UsersRound,
 } from "lucide-react";
+import { puedeVerPagina } from "../../utils/rolesSccvi";
 
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,14 +26,20 @@ const menuItems = [
   { id: "notificaciones", label: "Notificaciones", icon: BellRing },
   { id: "campanas", label: "Campañas", icon: Megaphone },
   { id: "reportes", label: "Reportes", icon: FileBarChart },
+  { id: "usuarios", label: "Usuarios y roles", icon: UsersRound },
 ];
 
 export default function Sidebar({
+  usuario,
   activePage,
   onNavigate,
   collapsed,
   onToggleCollapse,
 }) {
+  const menuItemsVisibles = menuItems.filter((item) =>
+    puedeVerPagina(usuario?.rol, item.id)
+  );
+
   return (
     <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
       <div className="sidebar-brand">
@@ -48,11 +56,11 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-section-label">
-        {!collapsed && "MENU PRINCIPAL"}
+        {!collapsed && "MENÚ PRINCIPAL"}
       </div>
 
       <nav className="sidebar-nav" aria-label="Menú principal">
-        {menuItems.map((item) => {
+        {menuItemsVisibles.map((item) => {
           const Icon = item.icon;
           const active = activePage === item.id;
 
@@ -74,12 +82,15 @@ export default function Sidebar({
       </nav>
 
       <div className="sidebar-bottom">
+        <div className="sidebar-divider" />
+
         <button
           type="button"
           className="sidebar-collapse-button"
           onClick={onToggleCollapse}
           title={collapsed ? "Expandir menú" : "Contraer menú"}
           aria-label={collapsed ? "Expandir menú" : "Contraer menú"}
+          aria-expanded={!collapsed}
         >
           {collapsed ? (
             <PanelLeftOpen size={18} />
