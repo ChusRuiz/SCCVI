@@ -1,0 +1,9 @@
+# Backups y reportes locales. Nunca subir datos de pacientes a Git.
+*.dump
+*.backup
+*.tar
+*.sql.gz
+*.sha256
+source_preflight.txt
+restore_toc.txt
+manifest.json
