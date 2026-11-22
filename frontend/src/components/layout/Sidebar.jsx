@@ -12,6 +12,7 @@ import {
   UserRound,
   BellRing,
   Megaphone,
+  FileBarChart,
   
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ const menuItems = [
   { id: "alertas", label: "Alertas", icon: BellRing,},
   { id: "notificaciones", label: "Notificaciones", icon: BellRing,},
   { id: "campanas", label: "Campañas", icon: Megaphone },
+  { id: "reportes", label: "Reportes", icon: FileBarChart,},
 ];
 
 export default function Sidebar({

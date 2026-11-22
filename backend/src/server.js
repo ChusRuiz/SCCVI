@@ -14,6 +14,7 @@ const { iniciarNotificacionesJob} = require("./jobs/notificacionesJob");
 const notificacionesRoutes = require("./routes/notificacionesRoutes");
 const carnetQrRoutes = require("./routes/carnetQrRoutes");
 const campanasRoutes = require("./routes/campanasRoutes");
+const reportesRoutes = require("./routes/reportesRoutes");
 
 require("dotenv").config();
 
@@ -42,6 +43,7 @@ app.use("/api/alertas", alertasRoutes);
 app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/carnets", carnetQrRoutes);
 app.use("/api/campanas", campanasRoutes);
+app.use("/api/reportes", reportesRoutes);
 
 // Verificar conexión a PostgreSQL
 app.get("/api/health", async (req, res) => {

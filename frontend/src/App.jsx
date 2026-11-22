@@ -11,6 +11,7 @@ import Alertas from "./pages/Alertas";
 import Notificaciones from "./pages/Notificaciones";
 import CarnetPublico from "./pages/CarnetPublico";
 import Campanas from "./pages/Campanas";
+import Reportes from "./pages/Reportes";
 
 import MainLayout from "./components/layout/MainLayout";
 
@@ -91,6 +92,10 @@ campanas: {
   title: "Campañas comunitarias",
   subtitle: "Jornadas de vacunación y controles médicos",
 },
+reportes: {
+  title: "Reportes",
+  subtitle: "Indicadores de crecimiento y vacunación",
+},
   };
 
   const contenido = {
@@ -102,6 +107,7 @@ campanas: {
     alertas: <Alertas />,
     notificaciones: <Notificaciones />,
     campanas: <Campanas />,
+    reportes: <Reportes />,
   };
 
   return (
